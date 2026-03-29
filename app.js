@@ -912,18 +912,23 @@ el.btnGuideModalAction.addEventListener('click', async () => {
       document.execCommand('copy');
       setStatus('Guide code copied!');
     }
+    closeGuideModal();
   } else {
     // Import
-    if (!activeProfile) { setStatus('Select or create a profile first to import'); return; }
     let code = el.guideModalTextarea.value.trim();
-    if (!code) { setStatus('Paste a guide code first'); return; }
+    if (!code) {
+      alert('Paste a guide code first!');
+      return;
+    }
     try {
       // Strip prefix if present
       if (code.startsWith('POEGUIDE:')) code = code.slice(9);
+      // Also strip any whitespace/newlines that might have been introduced by pasting
+      code = code.replace(/\s/g, '');
       let jsonStr;
       try {
         jsonStr = decodeFromBase64(code);
-      } catch (e) {
+      } catch (e2) {
         // Fallback: try the old encoding method
         jsonStr = decodeURIComponent(escape(atob(code)));
       }
@@ -941,14 +946,22 @@ el.btnGuideModalAction.addEventListener('click', async () => {
           count++;
         }
       }
-      if (count === 0) { setStatus('No valid guide data found in code'); return; }
-      await saveCustomGuide();
-      await saveCurrentToProfile();
+      if (count === 0) {
+        alert('No valid guide data found in the code.');
+        return;
+      }
+      if (activeProfile) {
+        await saveCustomGuide();
+        await saveCurrentToProfile();
+      }
       renderCurrentStep();
       closeGuideModal();
-      setStatus(`Imported guide: ${count} zones with actions & progress`);
+      const msg = `Imported guide: ${count} zones with actions & progress`;
+      setStatus(activeProfile ? msg : msg + ' (create a profile to save!)');
+      alert(activeProfile ? msg : msg + '\n\nCreate a profile to keep this data saved!');
     } catch (e) {
-      setStatus('Invalid guide code — check the data and try again');
+      console.error('Import error:', e);
+      alert('Invalid guide code — could not decode. Check the data and try again.');
     }
   }
 });

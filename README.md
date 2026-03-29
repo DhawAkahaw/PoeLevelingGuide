@@ -3,7 +3,7 @@
 A lightweight Electron overlay for Path of Exile that auto-detects your current zone from `Client.txt` and shows you step-by-step leveling instructions.
 
 ---
-
+TEST TEST
 ## ✅ Prerequisites
 
 Install these before anything else:

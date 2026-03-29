@@ -45,6 +45,9 @@
             <button id="btn-new-profile" class="profile-btn" title="Create new profile">+</button>
             <button id="btn-save-profile" class="profile-btn" title="Save current state to profile">💾</button>
             <button id="btn-delete-profile" class="profile-btn profile-btn-danger" title="Delete selected profile">✕</button>
+            <span class="profile-separator">│</span>
+            <button id="btn-export-guide" class="profile-btn" title="Export guide (actions only)">📤</button>
+            <button id="btn-import-guide" class="profile-btn" title="Import guide from code">📥</button>
           </div>
         </div>
         <!-- Inline new profile input (hidden by default) -->
@@ -87,6 +90,13 @@
         </div>
 
         <!-- Actions list -->
+        <div class="actions-header">
+          <span class="card-label" style="margin:0">ACTIONS</span>
+          <div class="actions-header-btns">
+            <button id="btn-edit-mode" class="profile-btn" title="Toggle edit mode (edit actions)">✎</button>
+            <button id="btn-add-action" class="profile-btn hidden" title="Add a new action">+</button>
+          </div>
+        </div>
         <ul class="actions-list" id="actions-list">
           <!-- populated by JS -->
         </ul>
@@ -169,6 +179,25 @@
       <div class="modal-footer">
         <button id="btn-modal-confirm" class="btn-primary">Go to Zone</button>
         <button id="btn-modal-cancel" class="btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guide Export/Import Modal -->
+  <div id="guide-modal" class="modal hidden">
+    <div class="modal-backdrop guide-modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="guide-modal-title">EXPORT GUIDE</h2>
+        <button id="btn-guide-modal-close" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="guide-modal-desc" class="guide-modal-desc">Copy this code and share it. It contains only zone actions — no personal data.</p>
+        <textarea id="guide-modal-textarea" class="guide-modal-textarea" rows="8" placeholder="Paste guide code here..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-guide-modal-action" class="btn-primary">Copy</button>
+        <button id="btn-guide-modal-cancel" class="btn-secondary">Close</button>
       </div>
     </div>
   </div>

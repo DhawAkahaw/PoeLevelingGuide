@@ -106,6 +106,7 @@ async function saveCurrentToProfile() {
     level: state.currentLevel,
     zoneIndex: state.currentZoneIndex,
     checkedActions: checkedActions,
+    customGuide: _customGuideData,
   };
   await saveProfiles(profiles);
 }
@@ -124,6 +125,9 @@ async function loadProfile(name) {
       _zoneActionsCache[zoneName] = indices;
     });
   }
+
+  // Restore custom guide edits
+  _customGuideData = data.customGuide || {};
 
   // Restore state
   state.currentZoneIndex = data.zoneIndex || 0;
@@ -158,6 +162,33 @@ function loadZoneActionState(zoneName) {
 function saveZoneActionState(zoneName, checkedIndices) {
   _zoneActionsCache[zoneName] = checkedIndices;
   saveCurrentToProfile();
+}
+
+// ─── CUSTOM GUIDE DATA (user edits overlay on top of base guide) ────────────
+let _customGuideData = {}; // { zoneName: { actions: [...] } }
+let _editMode = false;
+
+function getZoneActions(zoneName) {
+  // Custom overrides take priority over base guide
+  if (_customGuideData[zoneName] && _customGuideData[zoneName].actions) {
+    return _customGuideData[zoneName].actions;
+  }
+  const base = guideData && guideData[zoneName];
+  return base ? base.actions : [];
+}
+
+function setZoneActions(zoneName, actions) {
+  if (!_customGuideData[zoneName]) _customGuideData[zoneName] = {};
+  _customGuideData[zoneName].actions = actions;
+  saveCustomGuide();
+}
+
+async function saveCustomGuide() {
+  if (!activeProfile) return;
+  const profiles = await getProfiles();
+  if (!profiles[activeProfile]) return;
+  profiles[activeProfile].customGuide = _customGuideData;
+  await saveProfiles(profiles);
 }
 
 const el = {
@@ -206,6 +237,20 @@ const el = {
   newProfileInput:       document.getElementById('new-profile-input'),
   btnConfirmNewProfile:  document.getElementById('btn-confirm-new-profile'),
   btnCancelNewProfile:   document.getElementById('btn-cancel-new-profile'),
+  // Guide editor elements
+  btnEditMode:           document.getElementById('btn-edit-mode'),
+  btnAddAction:          document.getElementById('btn-add-action'),
+  // Guide export/import elements
+  btnExportGuide:        document.getElementById('btn-export-guide'),
+  btnImportGuide:        document.getElementById('btn-import-guide'),
+  guideModal:            document.getElementById('guide-modal'),
+  guideModalTitle:       document.getElementById('guide-modal-title'),
+  guideModalDesc:        document.getElementById('guide-modal-desc'),
+  guideModalTextarea:    document.getElementById('guide-modal-textarea'),
+  btnGuideModalAction:   document.getElementById('btn-guide-modal-action'),
+  btnGuideModalCancel:   document.getElementById('btn-guide-modal-cancel'),
+  btnGuideModalClose:    document.getElementById('btn-guide-modal-close'),
+  guideModalBackdrop:    document.querySelector('.guide-modal-backdrop'),
 };
 
 async function loadGuide() {
@@ -229,6 +274,10 @@ function renderCurrentStep() {
   el.stepCounter.textContent = `${state.currentZoneIndex + 1} / ${GUIDE_ZONES_ORDERED.length}`;
   el.currentZone.textContent = zoneName;
 
+  // Show/hide edit mode buttons
+  el.btnAddAction.classList.toggle('hidden', !_editMode);
+  el.btnEditMode.classList.toggle('btn-edit-active', _editMode);
+
   if (!zoneInfo) {
     el.actPill.value = '';
     el.actionsList.innerHTML = '<li><span class="step-num">—</span>No guide data for this zone.</li>';
@@ -244,40 +293,74 @@ function renderCurrentStep() {
   el.actPill.value = String(zoneInfo.act);
 
   el.actionsList.innerHTML = '';
+  const actions = getZoneActions(zoneName);
   const savedCheckedIndices = loadZoneActionState(zoneName);
   
-  zoneInfo.actions.forEach((action, i) => {
+  actions.forEach((action, i) => {
     const li = document.createElement('li');
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'action-checkbox';
-    li.innerHTML = `<span class="step-num">${i+1}</span><span class="action-text">${escapeHtml(action)}</span>`;
-    li.appendChild(checkbox);
-    
-    // Restore saved state
-    if (savedCheckedIndices.includes(i)) {
-      checkbox.checked = true;
-      li.classList.add('done');
-    }
-    
-    const toggle = () => {
-      li.classList.toggle('done');
-      checkbox.checked = li.classList.contains('done');
-      saveCheckedState();
-    };
-    
-    li.addEventListener('click', (e) => { if (e.target !== checkbox) toggle(); });
-    checkbox.addEventListener('change', () => {
-      li.classList.toggle('done', checkbox.checked);
-      saveCheckedState();
-    });
-    
-    function saveCheckedState() {
-      const checkedIndices = [];
-      el.actionsList.querySelectorAll('input[type="checkbox"]').forEach((cb, idx) => {
-        if (cb.checked) checkedIndices.push(idx);
+
+    if (_editMode) {
+      // Edit mode: show input + delete button
+      li.innerHTML = `<span class="step-num">${i+1}</span>`;
+      const editRow = document.createElement('div');
+      editRow.className = 'action-edit-row';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'action-edit-input';
+      input.value = action;
+      input.addEventListener('blur', () => {
+        const newActions = getCurrentEditedActions();
+        setZoneActions(zoneName, newActions);
+        renderCurrentStep();
       });
-      saveZoneActionState(zoneName, checkedIndices);
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') { input.blur(); }
+      });
+      const delBtn = document.createElement('button');
+      delBtn.className = 'action-edit-btn delete-btn';
+      delBtn.textContent = '✕';
+      delBtn.title = 'Remove this action';
+      delBtn.addEventListener('click', () => {
+        const newActions = getCurrentEditedActions();
+        newActions.splice(i, 1);
+        setZoneActions(zoneName, newActions);
+        renderCurrentStep();
+      });
+      editRow.appendChild(input);
+      editRow.appendChild(delBtn);
+      li.appendChild(editRow);
+    } else {
+      // Normal mode: show text + checkbox
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'action-checkbox';
+      li.innerHTML = `<span class="step-num">${i+1}</span><span class="action-text">${escapeHtml(action)}</span>`;
+      li.appendChild(checkbox);
+      
+      if (savedCheckedIndices.includes(i)) {
+        checkbox.checked = true;
+        li.classList.add('done');
+      }
+      
+      const toggle = () => {
+        li.classList.toggle('done');
+        checkbox.checked = li.classList.contains('done');
+        saveCheckedState();
+      };
+      
+      li.addEventListener('click', (e) => { if (e.target !== checkbox) toggle(); });
+      checkbox.addEventListener('change', () => {
+        li.classList.toggle('done', checkbox.checked);
+        saveCheckedState();
+      });
+      
+      function saveCheckedState() {
+        const checkedIndices = [];
+        el.actionsList.querySelectorAll('input[type="checkbox"]').forEach((cb, idx) => {
+          if (cb.checked) checkedIndices.push(idx);
+        });
+        saveZoneActionState(zoneName, checkedIndices);
+      }
     }
     
     el.actionsList.appendChild(li);
@@ -666,6 +749,8 @@ el.profileSelect.addEventListener('change', async () => {
   if (!name) {
     activeProfile = null;
     _zoneActionsCache = {};
+    _customGuideData = {};
+    _editMode = false;
     state.currentZoneIndex = 0;
     state.currentLevel = null;
     el.levelDisplay.textContent = '—';
@@ -723,6 +808,118 @@ el.btnDeleteProfile.addEventListener('click', async () => {
   activeProfile = null;
   await populateProfileSelect();
   setStatus(`Profile deleted: ${name}`);
+});
+
+// ─── GUIDE EDITOR ───────────────────────────────────────────────────────────
+function getCurrentEditedActions() {
+  const inputs = el.actionsList.querySelectorAll('.action-edit-input');
+  return Array.from(inputs).map(input => input.value.trim()).filter(v => v);
+}
+
+el.btnEditMode.addEventListener('click', () => {
+  if (!activeProfile) { setStatus('Select or create a profile first to edit guides'); return; }
+  _editMode = !_editMode;
+  renderCurrentStep();
+  setStatus(_editMode ? 'Edit mode ON — click actions to edit, + to add' : 'Edit mode OFF');
+});
+
+el.btnAddAction.addEventListener('click', () => {
+  const zoneName = GUIDE_ZONES_ORDERED[state.currentZoneIndex];
+  const actions = getZoneActions(zoneName).slice(); // copy
+  actions.push('New action');
+  setZoneActions(zoneName, actions);
+  renderCurrentStep();
+  // Focus the last input
+  const inputs = el.actionsList.querySelectorAll('.action-edit-input');
+  if (inputs.length > 0) {
+    const last = inputs[inputs.length - 1];
+    last.focus();
+    last.select();
+  }
+});
+
+// ─── GUIDE EXPORT / IMPORT ──────────────────────────────────────────────────
+let _guideModalMode = 'export'; // 'export' or 'import'
+
+function openGuideModal(mode) {
+  _guideModalMode = mode;
+  el.guideModal.classList.remove('hidden');
+  if (mode === 'export') {
+    el.guideModalTitle.textContent = 'EXPORT GUIDE';
+    el.guideModalDesc.textContent = 'Copy this code and share it. It contains only zone actions — no personal data.';
+    el.btnGuideModalAction.textContent = 'Copy';
+    el.guideModalTextarea.readOnly = true;
+    // Build export data: only acts/zones/actions (custom overrides merged with base)
+    const exportData = {};
+    GUIDE_ZONES_ORDERED.forEach(zoneName => {
+      const zoneInfo = guideData[zoneName];
+      if (!zoneInfo) return;
+      const actions = getZoneActions(zoneName);
+      if (actions.length === 0) return;
+      exportData[zoneName] = { act: zoneInfo.act, actions: actions };
+    });
+    const jsonStr = JSON.stringify(exportData);
+    el.guideModalTextarea.value = btoa(unescape(encodeURIComponent(jsonStr)));
+  } else {
+    el.guideModalTitle.textContent = 'IMPORT GUIDE';
+    el.guideModalDesc.textContent = 'Paste a guide code below. This will override your current zone actions.';
+    el.btnGuideModalAction.textContent = 'Import';
+    el.guideModalTextarea.readOnly = false;
+    el.guideModalTextarea.value = '';
+  }
+  el.guideModalTextarea.focus();
+}
+
+function closeGuideModal() {
+  el.guideModal.classList.add('hidden');
+}
+
+el.btnExportGuide.addEventListener('click', () => openGuideModal('export'));
+el.btnImportGuide.addEventListener('click', () => {
+  if (!activeProfile) { setStatus('Select or create a profile first to import'); return; }
+  openGuideModal('import');
+});
+
+el.btnGuideModalClose.addEventListener('click', closeGuideModal);
+el.btnGuideModalCancel.addEventListener('click', closeGuideModal);
+el.guideModalBackdrop.addEventListener('click', closeGuideModal);
+
+el.btnGuideModalAction.addEventListener('click', async () => {
+  if (_guideModalMode === 'export') {
+    // Copy to clipboard
+    el.guideModalTextarea.select();
+    try {
+      await navigator.clipboard.writeText(el.guideModalTextarea.value);
+      setStatus('Guide code copied to clipboard!');
+    } catch (e) {
+      document.execCommand('copy');
+      setStatus('Guide code copied!');
+    }
+  } else {
+    // Import
+    const code = el.guideModalTextarea.value.trim();
+    if (!code) { setStatus('Paste a guide code first'); return; }
+    try {
+      const jsonStr = decodeURIComponent(escape(atob(code)));
+      const importedData = JSON.parse(jsonStr);
+      // Validate structure
+      let count = 0;
+      for (const [zoneName, zoneData] of Object.entries(importedData)) {
+        if (zoneData && Array.isArray(zoneData.actions) && typeof zoneData.act === 'number') {
+          if (!_customGuideData[zoneName]) _customGuideData[zoneName] = {};
+          _customGuideData[zoneName].actions = zoneData.actions;
+          count++;
+        }
+      }
+      if (count === 0) { setStatus('No valid guide data found in code'); return; }
+      await saveCustomGuide();
+      renderCurrentStep();
+      closeGuideModal();
+      setStatus(`Imported guide: ${count} zones updated`);
+    } catch (e) {
+      setStatus('Invalid guide code — check the data and try again');
+    }
+  }
 });
 
 if (window.poeOverlay) {

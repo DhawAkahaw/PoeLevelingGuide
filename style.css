@@ -904,3 +904,104 @@ html, body {
 .zone-flash {
   animation: zoneFlash 1.2s ease-out;
 }
+
+/* ── GUIDE EDITOR ────────────────────────────────────────────────── */
+.actions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.actions-header-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.action-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.action-edit-input {
+  flex: 1;
+  padding: 3px 6px;
+  background: rgba(20, 16, 12, 0.9);
+  color: var(--gold-bright);
+  border: 1px solid var(--border-gold);
+  border-radius: 2px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  outline: none;
+}
+
+.action-edit-input:focus {
+  box-shadow: 0 0 6px rgba(200, 150, 60, 0.4);
+}
+
+.action-edit-btn {
+  background: none;
+  border: 1px solid var(--border-dim);
+  color: var(--text-secondary);
+  width: 18px;
+  height: 18px;
+  border-radius: 2px;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.action-edit-btn:hover {
+  border-color: var(--border-gold);
+  color: var(--gold-bright);
+}
+
+.action-edit-btn.delete-btn:hover {
+  border-color: var(--red-death);
+  color: var(--red-death);
+}
+
+.btn-edit-active {
+  color: var(--gold-bright) !important;
+  border-color: var(--gold-bright) !important;
+  background: rgba(200, 150, 60, 0.15);
+}
+
+.profile-separator {
+  color: var(--border-dim);
+  font-size: 12px;
+  user-select: none;
+}
+
+/* ── GUIDE MODAL ─────────────────────────────────────────────────── */
+.guide-modal-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.guide-modal-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  background: rgba(20, 16, 12, 0.9);
+  color: var(--text-primary);
+  border: 1px solid var(--border-dim);
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 10px;
+  resize: vertical;
+  outline: none;
+  word-break: break-all;
+}
+
+.guide-modal-textarea:focus {
+  border-color: var(--border-gold);
+  box-shadow: 0 0 8px rgba(200, 150, 60, 0.2);
+}

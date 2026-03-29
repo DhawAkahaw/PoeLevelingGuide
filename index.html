@@ -34,6 +34,27 @@
     <!-- Main content -->
     <div id="content">
 
+      <!-- Profile bar -->
+      <div id="profile-bar" class="card profile-card">
+        <div class="profile-row">
+          <span class="card-label">PROFILE</span>
+          <div class="profile-controls">
+            <select id="profile-select" class="profile-select">
+              <option value="">— No Profile —</option>
+            </select>
+            <button id="btn-new-profile" class="profile-btn" title="Create new profile">+</button>
+            <button id="btn-save-profile" class="profile-btn" title="Save current state to profile">💾</button>
+            <button id="btn-delete-profile" class="profile-btn profile-btn-danger" title="Delete selected profile">✕</button>
+          </div>
+        </div>
+        <!-- Inline new profile input (hidden by default) -->
+        <div id="new-profile-row" class="new-profile-row hidden">
+          <input type="text" id="new-profile-input" class="new-profile-input" placeholder="Profile name (e.g. MalekPoe1)" maxlength="30">
+          <button id="btn-confirm-new-profile" class="profile-btn profile-btn-confirm">Create</button>
+          <button id="btn-cancel-new-profile" class="profile-btn">Cancel</button>
+        </div>
+      </div>
+
       <!-- Current step card -->
       <div id="step-card" class="card">
         <div class="card-header">

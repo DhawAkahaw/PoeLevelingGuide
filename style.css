@@ -202,6 +202,121 @@ html, body {
 #content::-webkit-scrollbar-track { background: transparent; }
 #content::-webkit-scrollbar-thumb { background: var(--border-dim); border-radius: 2px; }
 
+/* ── PROFILE CARD ────────────────────────────────────────────────── */
+.profile-card {
+  padding: 8px 12px;
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.profile-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.profile-select {
+  padding: 3px 6px;
+  background: rgba(20, 16, 12, 0.9);
+  color: var(--gold-bright);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  outline: none;
+  cursor: pointer;
+  min-width: 120px;
+  transition: all 0.2s ease;
+}
+
+.profile-select:hover,
+.profile-select:focus {
+  border-color: var(--border-gold);
+  box-shadow: 0 0 6px rgba(200, 150, 60, 0.3);
+}
+
+.profile-select option {
+  background: rgba(20, 16, 12, 0.95);
+  color: var(--gold-bright);
+}
+
+.profile-btn {
+  background: none;
+  border: 1px solid var(--border-dim);
+  color: var(--text-secondary);
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.profile-btn:hover {
+  border-color: var(--border-gold);
+  color: var(--gold-bright);
+}
+
+.profile-btn-danger:hover {
+  border-color: var(--red-death);
+  color: var(--red-death);
+}
+
+.profile-btn-confirm {
+  width: auto;
+  padding: 0 8px;
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--green-ok);
+  border-color: var(--green-ok);
+}
+
+.profile-btn-confirm:hover {
+  background: rgba(74, 138, 64, 0.2);
+  box-shadow: 0 0 6px rgba(74, 138, 64, 0.4);
+}
+
+.new-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.new-profile-row.hidden {
+  display: none;
+}
+
+.new-profile-input {
+  flex: 1;
+  padding: 4px 8px;
+  background: rgba(20, 16, 12, 0.9);
+  color: var(--gold-bright);
+  border: 1px solid var(--border-gold);
+  border-radius: 2px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  outline: none;
+}
+
+.new-profile-input:focus {
+  box-shadow: 0 0 8px rgba(200, 150, 60, 0.4);
+}
+
 /* ── CARDS ───────────────────────────────────────────────────────── */
 .card {
   background: var(--bg-card);

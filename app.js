@@ -55,15 +55,109 @@ const LAB_COLORS = {
 
 let guideData = null;
 let state = { currentZoneIndex:0, currentLevel:null, clickthrough:false };
+let activeProfile = null; // name of the currently loaded profile
 
-// ─── ZONE ACTION STATE PERSISTENCE ──────────────────────────────────────
+// ─── PROFILE MANAGEMENT (file-based via poe-profiles.json) ──────────────────
+// In-memory cache of all profiles — loaded from file on startup
+let _profilesCache = {};
+
+async function getProfiles() {
+  return _profilesCache;
+}
+
+async function _loadProfilesFromFile() {
+  if (window.poeOverlay && window.poeOverlay.loadProfiles) {
+    _profilesCache = await window.poeOverlay.loadProfiles();
+  }
+}
+
+async function saveProfiles(profiles) {
+  _profilesCache = profiles;
+  if (window.poeOverlay && window.poeOverlay.saveProfiles) {
+    await window.poeOverlay.saveProfiles(profiles);
+  }
+}
+
+async function createProfile(name) {
+  const profiles = await getProfiles();
+  if (profiles[name]) return false; // already exists
+  profiles[name] = { level: null, zoneIndex: 0, checkedActions: {} };
+  await saveProfiles(profiles);
+  return true;
+}
+
+async function deleteProfile(name) {
+  const profiles = await getProfiles();
+  delete profiles[name];
+  await saveProfiles(profiles);
+}
+
+async function saveCurrentToProfile() {
+  if (!activeProfile) return;
+  const profiles = await getProfiles();
+  // Gather all checked actions from in-memory zone action state
+  const checkedActions = {};
+  GUIDE_ZONES_ORDERED.forEach(zoneName => {
+    if (_zoneActionsCache[zoneName] && _zoneActionsCache[zoneName].length > 0) {
+      checkedActions[zoneName] = _zoneActionsCache[zoneName];
+    }
+  });
+  profiles[activeProfile] = {
+    level: state.currentLevel,
+    zoneIndex: state.currentZoneIndex,
+    checkedActions: checkedActions,
+  };
+  await saveProfiles(profiles);
+}
+
+async function loadProfile(name) {
+  const profiles = await getProfiles();
+  const data = profiles[name];
+  if (!data) return false;
+
+  // Clear all existing zone action states
+  _zoneActionsCache = {};
+
+  // Restore checked actions
+  if (data.checkedActions) {
+    Object.entries(data.checkedActions).forEach(([zoneName, indices]) => {
+      _zoneActionsCache[zoneName] = indices;
+    });
+  }
+
+  // Restore state
+  state.currentZoneIndex = data.zoneIndex || 0;
+  state.currentLevel = data.level || null;
+  el.levelDisplay.textContent = state.currentLevel || '—';
+  activeProfile = name;
+
+  renderCurrentStep();
+  return true;
+}
+
+async function populateProfileSelect() {
+  const profiles = await getProfiles();
+  const sel = el.profileSelect;
+  sel.innerHTML = '<option value="">— No Profile —</option>';
+  Object.keys(profiles).sort().forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+  if (activeProfile) sel.value = activeProfile;
+}
+
+// ─── ZONE ACTION STATE (in-memory, persisted inside profiles) ───────────────
+let _zoneActionsCache = {};
+
 function loadZoneActionState(zoneName) {
-  const saved = localStorage.getItem(`zone_actions_${zoneName}`);
-  return saved ? JSON.parse(saved) : [];
+  return _zoneActionsCache[zoneName] || [];
 }
 
 function saveZoneActionState(zoneName, checkedIndices) {
-  localStorage.setItem(`zone_actions_${zoneName}`, JSON.stringify(checkedIndices));
+  _zoneActionsCache[zoneName] = checkedIndices;
+  saveCurrentToProfile();
 }
 
 const el = {
@@ -103,6 +197,15 @@ const el = {
   btnModalConfirm:   document.getElementById('btn-modal-confirm'),
   btnModalCancel:    document.getElementById('btn-modal-cancel'),
   modalBackdrop:     document.querySelector('.modal-backdrop'),
+  // Profile elements
+  profileSelect:         document.getElementById('profile-select'),
+  btnNewProfile:         document.getElementById('btn-new-profile'),
+  btnSaveProfile:        document.getElementById('btn-save-profile'),
+  btnDeleteProfile:      document.getElementById('btn-delete-profile'),
+  newProfileRow:         document.getElementById('new-profile-row'),
+  newProfileInput:       document.getElementById('new-profile-input'),
+  btnConfirmNewProfile:  document.getElementById('btn-confirm-new-profile'),
+  btnCancelNewProfile:   document.getElementById('btn-cancel-new-profile'),
 };
 
 async function loadGuide() {
@@ -110,6 +213,8 @@ async function loadGuide() {
     const res  = await fetch('act1-2.json');
     const json = await res.json();
     guideData  = json.zones;
+    await _loadProfilesFromFile();
+    await populateProfileSelect();
     renderCurrentStep();
     setStatus('Guide loaded — waiting for PoE...');
   } catch (err) {
@@ -240,6 +345,7 @@ function handleZoneEntered(data) {
     state.currentZoneIndex = idx;
     renderCurrentStep();
     flashCard();
+    saveCurrentToProfile();
   }
   setStatus(`Zone: ${zone}`);
 }
@@ -305,6 +411,7 @@ function handleLevelUp(data) {
   el.levelDisplay.textContent = level;
   setStatus(`Level ${level}`);
   pulseLevel();
+  saveCurrentToProfile();
 }
 
 function pulseLevel() {
@@ -313,8 +420,8 @@ function pulseLevel() {
   setTimeout(() => { el.levelDisplay.style.color=''; el.levelDisplay.style.textShadow=''; }, 2000);
 }
 
-function goNext() { if (state.currentZoneIndex < GUIDE_ZONES_ORDERED.length-1) { state.currentZoneIndex++; renderCurrentStep(); } }
-function goPrev() { if (state.currentZoneIndex > 0) { state.currentZoneIndex--; renderCurrentStep(); } }
+function goNext() { if (state.currentZoneIndex < GUIDE_ZONES_ORDERED.length-1) { state.currentZoneIndex++; renderCurrentStep(); saveCurrentToProfile(); } }
+function goPrev() { if (state.currentZoneIndex > 0) { state.currentZoneIndex--; renderCurrentStep(); saveCurrentToProfile(); } }
 
 let clickthroughActive = false;
 function setClickthrough(enable) { window.poeOverlay?.setClickthrough(enable); }
@@ -396,6 +503,7 @@ function goToSelectedZone() {
     renderCurrentStep();
     flashCard();
     setStatus(`Jumped to: ${zoneName}`);
+    saveCurrentToProfile();
     closeZoneSelectorModal();
   } else {
     setStatus('Zone not found');
@@ -436,6 +544,7 @@ function submitZoneJump() {
     renderCurrentStep();
     flashCard();
     setStatus(`Jumped to zone ${zoneNum}`);
+    saveCurrentToProfile();
   } else {
     setStatus(`Invalid zone number. Valid range: 1-${GUIDE_ZONES_ORDERED.length}`);
   }
@@ -505,6 +614,7 @@ function submitLevelChange() {
     state.currentLevel = newLevel;
     el.levelDisplay.textContent = newLevel;
     setStatus(`Character level set to: ${newLevel}`);
+    saveCurrentToProfile();
   } else {
     setStatus('Invalid level. Valid range: 1-100');
   }
@@ -543,10 +653,76 @@ el.actSelectDropdown.addEventListener('change', () => {
       renderCurrentStep();
       flashCard();
       setStatus(`Jumped to Act ${actNum}: ${firstZoneOfAct}`);
+      saveCurrentToProfile();
     }
   } else {
     setStatus(`No zones found for Act ${actNum}`);
   }
+});
+
+// ─── PROFILE EVENT LISTENERS ────────────────────────────────────────────────
+el.profileSelect.addEventListener('change', async () => {
+  const name = el.profileSelect.value;
+  if (!name) {
+    activeProfile = null;
+    _zoneActionsCache = {};
+    state.currentZoneIndex = 0;
+    state.currentLevel = null;
+    el.levelDisplay.textContent = '—';
+    renderCurrentStep();
+    setStatus('No profile selected');
+    return;
+  }
+  if (await loadProfile(name)) {
+    setStatus(`Profile loaded: ${name}`);
+    flashCard();
+  }
+});
+
+el.btnNewProfile.addEventListener('click', () => {
+  el.newProfileRow.classList.remove('hidden');
+  el.newProfileInput.value = '';
+  el.newProfileInput.focus();
+});
+
+el.btnCancelNewProfile.addEventListener('click', () => {
+  el.newProfileRow.classList.add('hidden');
+});
+
+async function confirmNewProfile() {
+  const name = el.newProfileInput.value.trim();
+  if (!name) { setStatus('Enter a profile name'); return; }
+  if (await createProfile(name)) {
+    activeProfile = name;
+    await populateProfileSelect();
+    el.profileSelect.value = name;
+    await saveCurrentToProfile();
+    el.newProfileRow.classList.add('hidden');
+    setStatus(`Profile created: ${name}`);
+  } else {
+    setStatus(`Profile "${name}" already exists`);
+  }
+}
+
+el.btnConfirmNewProfile.addEventListener('click', confirmNewProfile);
+el.newProfileInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') confirmNewProfile();
+  else if (e.key === 'Escape') el.newProfileRow.classList.add('hidden');
+});
+
+el.btnSaveProfile.addEventListener('click', async () => {
+  if (!activeProfile) { setStatus('Select or create a profile first'); return; }
+  await saveCurrentToProfile();
+  setStatus(`Profile saved: ${activeProfile}`);
+});
+
+el.btnDeleteProfile.addEventListener('click', async () => {
+  if (!activeProfile) { setStatus('No profile selected'); return; }
+  const name = activeProfile;
+  await deleteProfile(name);
+  activeProfile = null;
+  await populateProfileSelect();
+  setStatus(`Profile deleted: ${name}`);
 });
 
 if (window.poeOverlay) {

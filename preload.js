@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld('poeOverlay', {
   // ── Send events to main process ──
   getLogStatus:    ()         => ipcRenderer.invoke('get-log-status'),
   setClickthrough: (enabled)  => ipcRenderer.send('set-clickthrough', enabled),
+  loadProfiles:    ()         => ipcRenderer.invoke('load-profiles'),
+  saveProfiles:    (profiles) => ipcRenderer.invoke('save-profiles', profiles),
 
   // ── Remove listeners (cleanup) ──
   removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),

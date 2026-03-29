@@ -20,6 +20,7 @@ const STARTUP_READ_BYTES = 200 * 1024;
 
 // ─── PERSIST FILE (saves level + zone between sessions) ────────────────────────
 const SAVE_FILE = path.join(app.getPath('userData'), 'poe-overlay-state.json');
+const PROFILES_FILE = path.join(__dirname, 'poe-profiles.json');
 
 function loadSavedState() {
   try {
@@ -229,6 +230,28 @@ ipcMain.on('set-clickthrough', (_, enable) => {
     overlayWindow.setIgnoreMouseEvents(true, { forward: true });
   } else {
     overlayWindow.setIgnoreMouseEvents(false);
+  }
+});
+
+// ─── PROFILES FILE I/O ─────────────────────────────────────────────────────────
+ipcMain.handle('load-profiles', () => {
+  try {
+    if (fs.existsSync(PROFILES_FILE)) {
+      return JSON.parse(fs.readFileSync(PROFILES_FILE, 'utf8'));
+    }
+  } catch (e) {
+    console.error('[PoE Overlay] Failed to load profiles:', e.message);
+  }
+  return {};
+});
+
+ipcMain.handle('save-profiles', (_, profiles) => {
+  try {
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(profiles, null, 2), 'utf8');
+    return true;
+  } catch (e) {
+    console.error('[PoE Overlay] Failed to save profiles:', e.message);
+    return false;
   }
 });
 

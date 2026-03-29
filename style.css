@@ -338,53 +338,35 @@ html, body {
   display: none;
 }
 
-.act-pill {
+.act-select-dropdown {
+  padding: 2px 6px;
+  background: rgba(20, 16, 12, 0.9);
+  color: var(--gold);
+  border: 1px solid var(--border-gold);
+  border-radius: 2px;
   font-family: var(--font-display);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.12em;
-  color: var(--gold);
-  padding: 2px 6px;
-  border: 1px solid var(--border-gold);
-  border-radius: 2px;
-  flex-shrink: 0;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.act-pill:hover {
-  color: var(--gold-bright);
-  background: rgba(200, 150, 60, 0.1);
-  border-color: var(--gold-bright);
-}
-
-.act-select-dropdown {
-  padding: 2px 4px;
-  background: rgba(20, 16, 12, 0.9);
-  color: var(--gold-bright);
-  border: 2px solid var(--border-gold);
-  border-radius: 2px;
-  font-family: var(--font-display);
-  font-size: 9px;
-  font-weight: 700;
   outline: none;
   flex-shrink: 0;
   cursor: pointer;
   transition: all 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .act-select-dropdown:hover,
 .act-select-dropdown:focus {
+  color: var(--gold-bright);
+  background: rgba(200, 150, 60, 0.1);
+  border-color: var(--gold-bright);
   box-shadow: 0 0 8px rgba(200, 150, 60, 0.4);
 }
 
 .act-select-dropdown option {
   background: rgba(20, 16, 12, 0.95);
   color: var(--gold-bright);
-}
-
-.act-select-dropdown.hidden {
-  display: none;
 }
 
 /* ── ACTIONS LIST ────────────────────────────────────────────────── */

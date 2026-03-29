@@ -66,7 +66,7 @@ const el = {
   zoneTypeBadge:   document.getElementById('zone-type-badge'),
   currentZone:     document.getElementById('current-zone-name'),
   zoneNameInput:   document.getElementById('zone-name-input'),
-  actPill:         document.getElementById('act-pill'),
+  actPill:         document.getElementById('act-select-dropdown'),
   actSelectDropdown: document.getElementById('act-select-dropdown'),
   stepCounter:     document.getElementById('step-counter'),
   zoneJumpInput:   document.getElementById('zone-jump-input'),
@@ -114,7 +114,7 @@ function renderCurrentStep() {
   el.currentZone.textContent = zoneName;
 
   if (!zoneInfo) {
-    el.actPill.textContent = '?';
+    el.actPill.value = '';
     el.actionsList.innerHTML = '<li><span class="step-num">—</span>No guide data for this zone.</li>';
     el.rewardsSection.classList.add('hidden');
     el.tipBox.classList.add('hidden');
@@ -125,7 +125,7 @@ function renderCurrentStep() {
     return;
   }
 
-  el.actPill.textContent = `ACT ${zoneInfo.act}`;
+  el.actPill.value = String(zoneInfo.act);
 
   el.actionsList.innerHTML = '';
   zoneInfo.actions.forEach((action, i) => {
@@ -422,17 +422,8 @@ el.zoneNameInput.addEventListener('keypress', (e) => {
 
 el.zoneNameInput.addEventListener('blur', submitZoneName);
 
-// ─── ACT DROPDOWN (Click act pill to edit) ──────────────────────────────────
-el.actPill.addEventListener('click', () => {
-  el.actPill.classList.add('hidden');
-  el.actSelectDropdown.classList.remove('hidden');
-  const currentAct = el.actPill.textContent.replace(/\D/g, '');
-  el.actSelectDropdown.value = currentAct;
-  el.actSelectDropdown.focus();
-  el.actSelectDropdown.click(); // Open dropdown immediately
-});
-
-function submitActEdit() {
+// ─── ACT DROPDOWN (single-click select) ─────────────────────────────────────
+el.actSelectDropdown.addEventListener('change', () => {
   const actNum = parseInt(el.actSelectDropdown.value);
   
   // Find the first zone of the selected act
@@ -452,17 +443,7 @@ function submitActEdit() {
   } else {
     setStatus(`No zones found for Act ${actNum}`);
   }
-  
-  cancelActEdit();
-}
-
-function cancelActEdit() {
-  el.actSelectDropdown.classList.add('hidden');
-  el.actPill.classList.remove('hidden');
-}
-
-el.actSelectDropdown.addEventListener('change', submitActEdit);
-el.actSelectDropdown.addEventListener('blur', cancelActEdit);
+});
 
 if (window.poeOverlay) {
   window.poeOverlay.onZoneEntered(handleZoneEntered);

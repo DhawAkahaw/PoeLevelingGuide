@@ -406,10 +406,27 @@ html, body {
   width: 14px;
 }
 
+.actions-list li .action-text {
+  flex: 1;
+}
+
+.action-checkbox {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  accent-color: var(--green-ok);
+  cursor: pointer;
+}
+
 .actions-list li.done {
-  opacity: 0.4;
-  text-decoration: line-through;
-  text-decoration-color: var(--text-dim);
+  color: var(--green-ok);
+  border-left-color: var(--green-ok);
+  background: rgba(74, 138, 64, 0.1);
+}
+
+.actions-list li.done .step-num {
+  color: var(--green-ok);
 }
 
 /* ── REWARDS ─────────────────────────────────────────────────────── */

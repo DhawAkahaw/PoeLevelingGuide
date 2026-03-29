@@ -130,8 +130,17 @@ function renderCurrentStep() {
   el.actionsList.innerHTML = '';
   zoneInfo.actions.forEach((action, i) => {
     const li = document.createElement('li');
-    li.innerHTML = `<span class="step-num">${i+1}</span>${escapeHtml(action)}`;
-    li.addEventListener('click', () => li.classList.toggle('done'));
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'action-checkbox';
+    li.innerHTML = `<span class="step-num">${i+1}</span><span class="action-text">${escapeHtml(action)}</span>`;
+    li.appendChild(checkbox);
+    const toggle = () => {
+      li.classList.toggle('done');
+      checkbox.checked = li.classList.contains('done');
+    };
+    li.addEventListener('click', (e) => { if (e.target !== checkbox) toggle(); });
+    checkbox.addEventListener('change', () => li.classList.toggle('done', checkbox.checked));
     el.actionsList.appendChild(li);
   });
 

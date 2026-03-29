@@ -846,28 +846,48 @@ function openGuideModal(mode) {
   el.guideModal.classList.remove('hidden');
   if (mode === 'export') {
     el.guideModalTitle.textContent = 'EXPORT GUIDE';
-    el.guideModalDesc.textContent = 'Copy this code and share it. It contains only zone actions — no personal data.';
+    el.guideModalDesc.textContent = 'Copy this code and share it. It contains zone actions and checked progress — no personal data.';
     el.btnGuideModalAction.textContent = 'Copy';
     el.guideModalTextarea.readOnly = true;
-    // Build export data: only acts/zones/actions (custom overrides merged with base)
+    // Build export data: acts/zones/actions + checked states
     const exportData = {};
     GUIDE_ZONES_ORDERED.forEach(zoneName => {
       const zoneInfo = guideData[zoneName];
       if (!zoneInfo) return;
       const actions = getZoneActions(zoneName);
       if (actions.length === 0) return;
-      exportData[zoneName] = { act: zoneInfo.act, actions: actions };
+      const entry = { act: zoneInfo.act, actions: actions };
+      const checked = _zoneActionsCache[zoneName];
+      if (checked && checked.length > 0) entry.checked = checked;
+      exportData[zoneName] = entry;
     });
+    // Encode as POEguide:<base64 of compressed JSON>
     const jsonStr = JSON.stringify(exportData);
-    el.guideModalTextarea.value = btoa(unescape(encodeURIComponent(jsonStr)));
+    const encoded = encodeToBase64(jsonStr);
+    el.guideModalTextarea.value = 'POEGUIDE:' + encoded;
   } else {
     el.guideModalTitle.textContent = 'IMPORT GUIDE';
-    el.guideModalDesc.textContent = 'Paste a guide code below. This will override your current zone actions.';
+    el.guideModalDesc.textContent = 'Paste a guide code below. This will load the guide actions and checked progress.';
     el.btnGuideModalAction.textContent = 'Import';
     el.guideModalTextarea.readOnly = false;
     el.guideModalTextarea.value = '';
   }
   el.guideModalTextarea.focus();
+}
+
+// Safe base64 encode/decode that handles unicode
+function encodeToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function decodeFromBase64(b64) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
 }
 
 function closeGuideModal() {
@@ -895,25 +915,38 @@ el.btnGuideModalAction.addEventListener('click', async () => {
   } else {
     // Import
     if (!activeProfile) { setStatus('Select or create a profile first to import'); return; }
-    const code = el.guideModalTextarea.value.trim();
+    let code = el.guideModalTextarea.value.trim();
     if (!code) { setStatus('Paste a guide code first'); return; }
     try {
-      const jsonStr = decodeURIComponent(escape(atob(code)));
+      // Strip prefix if present
+      if (code.startsWith('POEGUIDE:')) code = code.slice(9);
+      let jsonStr;
+      try {
+        jsonStr = decodeFromBase64(code);
+      } catch (e) {
+        // Fallback: try the old encoding method
+        jsonStr = decodeURIComponent(escape(atob(code)));
+      }
       const importedData = JSON.parse(jsonStr);
-      // Validate structure
+      // Validate structure and apply
       let count = 0;
       for (const [zoneName, zoneData] of Object.entries(importedData)) {
         if (zoneData && Array.isArray(zoneData.actions) && typeof zoneData.act === 'number') {
           if (!_customGuideData[zoneName]) _customGuideData[zoneName] = {};
           _customGuideData[zoneName].actions = zoneData.actions;
+          // Restore checked states if present
+          if (Array.isArray(zoneData.checked)) {
+            _zoneActionsCache[zoneName] = zoneData.checked;
+          }
           count++;
         }
       }
       if (count === 0) { setStatus('No valid guide data found in code'); return; }
       await saveCustomGuide();
+      await saveCurrentToProfile();
       renderCurrentStep();
       closeGuideModal();
-      setStatus(`Imported guide: ${count} zones updated`);
+      setStatus(`Imported guide: ${count} zones with actions & progress`);
     } catch (e) {
       setStatus('Invalid guide code — check the data and try again');
     }

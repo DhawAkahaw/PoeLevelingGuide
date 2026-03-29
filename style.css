@@ -420,8 +420,8 @@ html, body {
 }
 
 .actions-list li.done {
-  color: var(--green-ok);
-  border-left-color: var(--green-ok);
+  color: var(--text-primary);   /* text */
+  border-left-color: var(--green-ok); /* border */
   background: rgba(74, 138, 64, 0.1);
 }
 
@@ -528,6 +528,36 @@ html, body {
   font-size: 22px;
   font-weight: 700;
   color: var(--gold-bright);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.level-display:hover {
+  background: rgba(200, 150, 60, 0.1);
+}
+
+.level-input {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold-bright);
+  background: rgba(20, 16, 12, 0.9);
+  border: 2px solid var(--border-gold);
+  border-radius: 2px;
+  padding: 2px 6px;
+  outline: none;
+  width: 60px;
+  text-align: center;
+}
+
+.level-input:focus {
+  box-shadow: 0 0 8px rgba(200, 150, 60, 0.4);
+}
+
+.level-input.hidden {
+  display: none;
 }
 
 /* ── STATUS BAR ──────────────────────────────────────────────────── */

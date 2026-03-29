@@ -341,10 +341,10 @@
         { "npc": "Eramir", "reward": "2 Passive Points for completing Act 2" }
       ],
       "tips": "Vaal Oversoul has physical slam and lightning beam. Stay out of the beam. Kill the summoned minions to stop the spam.",
-      "next": "Sarn Encampment"
+      "next": "The Sarn Encampment"
     },
 
-    "Sarn Encampment": {
+    "The Sarn Encampment": {
       "act": 3, "type": "town",
       "actions": [
         "Talk to Clarissa — unlocks The Sewer quest",

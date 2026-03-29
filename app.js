@@ -10,7 +10,7 @@ const GUIDE_ZONES_ORDERED = [
   "The Chamber of Sins Level 2","The Riverways","The Western Forest","The Eastern Forest",
   "The Wetlands","The Vaal Ruins","The Northern Forest","The Caverns","The Ancient Pyramid",
   // ACT 3
-  "Sarn Encampment","The City of Sarn","The Marketplace","The Battlefront","The Docks",
+  "The Sarn Encampment","The City of Sarn","The Marketplace","The Battlefront","The Docks",
   "The Sewers","The Ebony Barracks","The Imperial Gardens","The Library","The Archives",
   "The Lunaris Temple Level 1","The Lunaris Temple Level 2",
   "The Solaris Temple Level 1","The Solaris Temple Level 2",
@@ -56,6 +56,16 @@ const LAB_COLORS = {
 let guideData = null;
 let state = { currentZoneIndex:0, currentLevel:null, clickthrough:false };
 
+// ─── ZONE ACTION STATE PERSISTENCE ──────────────────────────────────────
+function loadZoneActionState(zoneName) {
+  const saved = localStorage.getItem(`zone_actions_${zoneName}`);
+  return saved ? JSON.parse(saved) : [];
+}
+
+function saveZoneActionState(zoneName, checkedIndices) {
+  localStorage.setItem(`zone_actions_${zoneName}`, JSON.stringify(checkedIndices));
+}
+
 const el = {
   app:             document.getElementById('app'),
   logIndicator:    document.getElementById('log-indicator'),
@@ -77,6 +87,7 @@ const el = {
   tipText:         document.getElementById('tip-text'),
   nextZoneName:    document.getElementById('next-zone-name'),
   levelDisplay:    document.getElementById('level-display'),
+  levelInput:      document.getElementById('level-input'),
   statusText:      document.getElementById('status-text'),
   btnNext:         document.getElementById('btn-next'),
   btnPrev:         document.getElementById('btn-prev'),
@@ -128,6 +139,8 @@ function renderCurrentStep() {
   el.actPill.value = String(zoneInfo.act);
 
   el.actionsList.innerHTML = '';
+  const savedCheckedIndices = loadZoneActionState(zoneName);
+  
   zoneInfo.actions.forEach((action, i) => {
     const li = document.createElement('li');
     const checkbox = document.createElement('input');
@@ -135,12 +148,33 @@ function renderCurrentStep() {
     checkbox.className = 'action-checkbox';
     li.innerHTML = `<span class="step-num">${i+1}</span><span class="action-text">${escapeHtml(action)}</span>`;
     li.appendChild(checkbox);
+    
+    // Restore saved state
+    if (savedCheckedIndices.includes(i)) {
+      checkbox.checked = true;
+      li.classList.add('done');
+    }
+    
     const toggle = () => {
       li.classList.toggle('done');
       checkbox.checked = li.classList.contains('done');
+      saveCheckedState();
     };
+    
     li.addEventListener('click', (e) => { if (e.target !== checkbox) toggle(); });
-    checkbox.addEventListener('change', () => li.classList.toggle('done', checkbox.checked));
+    checkbox.addEventListener('change', () => {
+      li.classList.toggle('done', checkbox.checked);
+      saveCheckedState();
+    });
+    
+    function saveCheckedState() {
+      const checkedIndices = [];
+      el.actionsList.querySelectorAll('input[type="checkbox"]').forEach((cb, idx) => {
+        if (cb.checked) checkedIndices.push(idx);
+      });
+      saveZoneActionState(zoneName, checkedIndices);
+    }
+    
     el.actionsList.appendChild(li);
   });
 
@@ -213,17 +247,42 @@ function handleZoneEntered(data) {
 function findZoneIndex(zoneName) {
   const exact = GUIDE_ZONES_ORDERED.indexOf(zoneName);
   if (exact !== -1) return exact;
+  
   const lower = zoneName.toLowerCase();
   const ci = GUIDE_ZONES_ORDERED.findIndex(z => z.toLowerCase() === lower);
   if (ci !== -1) return ci;
-  // Partial match — prefer closest to current position going forward
+  
+  // Partial match — try to use act context from current level
   const partials = [];
+  const actRanges = {
+    1: [1, 10], 2: [11, 25], 3: [26, 35], 4: [36, 40], 5: [41, 50],
+    6: [51, 57], 7: [58, 64], 8: [65, 71], 9: [72, 78], 10: [79, 120]
+  };
+  
   GUIDE_ZONES_ORDERED.forEach((z, i) => {
     const zBase = z.toLowerCase().replace(/\s*\(act \d+\)/i,'').trim();
     const inBase = lower.replace(/\s*\(act \d+\)/i,'').trim();
     if (zBase === inBase) partials.push(i);
   });
+  
   if (partials.length === 0) return -1;
+  if (partials.length === 1) return partials[0];
+  
+  // If we have multiple matches, use character level to determine act
+  if (state.currentLevel !== null && state.currentLevel > 0) {
+    for (const [act, [minLvl, maxLvl]] of Object.entries(actRanges)) {
+      if (state.currentLevel >= minLvl && state.currentLevel <= maxLvl) {
+        const actNum = parseInt(act);
+        const match = partials.find(i => {
+          const zInfo = guideData[GUIDE_ZONES_ORDERED[i]];
+          return zInfo && zInfo.act === actNum;
+        });
+        if (match !== undefined) return match;
+      }
+    }
+  }
+  
+  // Fallback: prefer closest to current position going forward
   const forward = partials.filter(i => i >= state.currentZoneIndex);
   return forward.length > 0 ? forward[0] : partials[partials.length - 1];
 }
@@ -430,6 +489,42 @@ el.zoneNameInput.addEventListener('keypress', (e) => {
 });
 
 el.zoneNameInput.addEventListener('blur', submitZoneName);
+
+// ─── LEVEL INPUT (Click level to edit manually) ──────────────────────────────
+el.levelDisplay.addEventListener('click', () => {
+  el.levelDisplay.classList.add('hidden');
+  el.levelInput.classList.remove('hidden');
+  el.levelInput.value = el.levelDisplay.textContent;
+  el.levelInput.focus();
+  el.levelInput.select();
+});
+
+function submitLevelChange() {
+  const newLevel = parseInt(el.levelInput.value);
+  if (!isNaN(newLevel) && newLevel >= 1 && newLevel <= 100) {
+    state.currentLevel = newLevel;
+    el.levelDisplay.textContent = newLevel;
+    setStatus(`Character level set to: ${newLevel}`);
+  } else {
+    setStatus('Invalid level. Valid range: 1-100');
+  }
+  cancelLevelEdit();
+}
+
+function cancelLevelEdit() {
+  el.levelInput.classList.add('hidden');
+  el.levelDisplay.classList.remove('hidden');
+}
+
+el.levelInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    submitLevelChange();
+  } else if (e.key === 'Escape') {
+    cancelLevelEdit();
+  }
+});
+
+el.levelInput.addEventListener('blur', submitLevelChange);
 
 // ─── ACT DROPDOWN (single-click select) ─────────────────────────────────────
 el.actSelectDropdown.addEventListener('change', () => {

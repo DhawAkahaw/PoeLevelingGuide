@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PoE Overlay</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Drag handle / header -->
+    <div id="header" class="drag-region">
+      <div class="header-left">
+        <span class="logo-gem">◆</span>
+        <span class="app-title">EXILE GUIDE</span>
+      </div>
+      <div class="header-right">
+        <div id="log-indicator" class="indicator disconnected" title="Client.txt connection status">
+          <span class="dot"></span>
+          <span class="indicator-label">Disconnected</span>
+        </div>
+        <button id="btn-clickthrough" class="icon-btn" title="Toggle click-through (makes overlay non-interactive)">⊙</button>
+        <button id="btn-minimize" class="icon-btn no-drag" title="Minimize">−</button>
+      </div>
+    </div>
+
+    <!-- Zone banner (auto-shown on zone c*/nge) -->
+    <div id="zone-banner" class="hidden">
+      <div class="zone-act-label" id="zone-act-label">ACT 2</div>
+      <div class="zone-name" id="zone-name">Lioneye's Watch</div>
+      <div class="zone-type-badge" id="zone-type-badge">Town</div>
+    </div>
+
+    <!-- Main content -->
+    <div id="content">
+
+      <!-- Current step card -->
+      <div id="step-card" class="card">
+        <div class="card-header">
+          <span class="card-label">CURRENT ZONE</span>
+          <div class="step-nav">
+            <button class="nav-btn" id="btn-prev" title="Previous zone (Ctrl+Left)">‹</button>
+            <span class="step-counter" id="step-counter" title="Click to jump to specific zone">1 / 16</span>
+            <button class="nav-btn" id="btn-next" title="Next zone (Ctrl+Right)">›</button>
+          </div>
+          <!-- Zone jump input (hidden by default) -->
+          <input type="number" id="zone-jump-input" class="zone-jump-input hidden" min="1" max="117" placeholder="Zone #">
+          
+        </div>
+
+        <div class="zone-title-row">
+          <span class="current-zone-name" id="current-zone-name" title="Click to change zone">Lioneye's Watch</span>
+          <input type="text" id="zone-name-input" class="zone-name-input hidden" placeholder="Zone name">
+          <span class="act-pill" id="act-pill" title="Click to change act">ACT 1</span>
+          <select id="act-select-dropdown" class="act-select-dropdown hidden">
+            <option value="1">ACT 1</option>
+            <option value="2">ACT 2</option>
+            <option value="3">ACT 3</option>
+            <option value="4">ACT 4</option>
+            <option value="5">ACT 5</option>
+            <option value="6">ACT 6</option>
+            <option value="7">ACT 7</option>
+            <option value="8">ACT 8</option>
+            <option value="9">ACT 9</option>
+            <option value="10">ACT 10</option>
+          </select>
+        </div>
+
+        <!-- Actions list -->
+        <ul class="actions-list" id="actions-list">
+          <!-- populated by JS -->
+        </ul>
+
+        <!-- Rewards section (if any) -->
+        <div id="rewards-section" class="rewards-section hidden">
+          <div class="rewards-header">
+            <span class="gem-icon">◈</span> CLAIM REWARDS
+          </div>
+          <div id="rewards-list" class="rewards-list"></div>
+        </div>
+
+        <!-- Tip box -->
+        <div id="tip-box" class="tip-box hidden">
+          <span class="tip-icon">💡</span>
+          <span id="tip-text"></span>
+        </div>
+      </div>
+
+      <!-- Next zone preview -->
+      <div id="next-card" class="card next-card">
+        <span class="card-label">NEXT ZONE</span>
+        <span class="next-zone-name" id="next-zone-name">The Coast →</span>
+      </div>
+
+      <!-- Level display -->
+      <div id="level-card" class="card level-card">
+        <span class="card-label">CHARACTER LEVEL</span>
+        <span class="level-display" id="level-display">—</span>
+      </div>
+
+    </div>
+
+    <!-- Status bar -->
+    <div id="status-bar">
+      <span id="status-text">Waiting for game...</span>
+      <span class="hotkey-hint">Ctrl+D toggle · Ctrl+← → navigate</span>
+      <button id="btn-zone-selector" class="zone-selector-btn" title="Manual zone selection">▼</button>
+    </div>
+  </div>
+
+  <!-- Zone Selector Modal -->
+  <div id="zone-selector-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>SELECT ZONE</h2>
+        <button id="btn-modal-close" class="modal-close">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Act selector -->
+        <div class="selector-group">
+          <label for="act-select">ACT</label>
+          <select id="act-select">
+            <option value="">Choose an act...</option>
+            <option value="1">Act 1</option>
+            <option value="2">Act 2</option>
+            <option value="3">Act 3</option>
+            <option value="4">Act 4</option>
+            <option value="5">Act 5</option>
+            <option value="6">Act 6</option>
+            <option value="7">Act 7</option>
+            <option value="8">Act 8</option>
+            <option value="9">Act 9</option>
+            <option value="10">Act 10</option>
+          </select>
+        </div>
+
+        <!-- Zone selector -->
+        <div class="selector-group">
+          <label for="zone-select">ZONE</label>
+          <select id="zone-select">
+            <option value="">Choose a zone...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="btn-modal-confirm" class="btn-primary">Go to Zone</button>
+        <button id="btn-modal-cancel" class="btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

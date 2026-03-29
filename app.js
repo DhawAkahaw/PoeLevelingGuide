@@ -875,10 +875,7 @@ function closeGuideModal() {
 }
 
 el.btnExportGuide.addEventListener('click', () => openGuideModal('export'));
-el.btnImportGuide.addEventListener('click', () => {
-  if (!activeProfile) { setStatus('Select or create a profile first to import'); return; }
-  openGuideModal('import');
-});
+el.btnImportGuide.addEventListener('click', () => openGuideModal('import'));
 
 el.btnGuideModalClose.addEventListener('click', closeGuideModal);
 el.btnGuideModalCancel.addEventListener('click', closeGuideModal);
@@ -897,6 +894,7 @@ el.btnGuideModalAction.addEventListener('click', async () => {
     }
   } else {
     // Import
+    if (!activeProfile) { setStatus('Select or create a profile first to import'); return; }
     const code = el.guideModalTextarea.value.trim();
     if (!code) { setStatus('Paste a guide code first'); return; }
     try {

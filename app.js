@@ -1330,32 +1330,68 @@ btnMaxrollImport.addEventListener('click', async () => {
 });
 
 if (window.poeOverlay) {
-  function showUpdateStatus(data) {
-    if (typeof data === 'string') data = { status: data };
-    const { status } = data;
-    if (status === 'checking') {
-      setStatus('🔍 Checking for updates...');
-    } else if (status === 'downloading') {
-      setStatus('↓ Downloading update...');
-    } else if (status === 'progress') {
-      setStatus(`↓ Downloading update... ${data.percent}%`);
-    } else if (status === 'up-to-date') {
-      setStatus('✓ App is up to date');
-    } else if (status === 'error') {
-      setStatus(`⚠ Update error: ${data.message || 'unknown'}`);
-    } else if (status === 'ready' && !document.getElementById('update-banner')) {
-      const bar = document.getElementById('status-bar');
-      const banner = document.createElement('div');
-      banner.id = 'update-banner';
-      banner.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:5px 12px;background:rgba(42,58,26,0.95);border-top:1px solid #5a8a2a;flex-shrink:0;gap:8px;';
-      banner.innerHTML = `
-        <span style="font-family:'Cinzel',serif;font-size:10px;color:#a0d060;letter-spacing:0.1em">⬆ Update ready</span>
-        <button id="btn-install-update" style="font-family:'Cinzel',serif;font-size:10px;padding:3px 10px;background:#5a8a2a;border:1px solid #a0d060;color:#e8f8d0;border-radius:3px;cursor:pointer">Restart &amp; Install</button>
+  function getOrCreateUpdateBar() {
+    let bar = document.getElementById('update-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'update-bar';
+      bar.style.cssText = 'display:none;flex-direction:column;padding:8px 12px;background:rgba(30,40,20,0.97);border-top:1px solid #5a8a2a;flex-shrink:0;gap:4px;';
+      bar.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span id="update-label" style="font-family:'Cinzel',serif;font-size:10px;color:#a0d060;letter-spacing:0.1em"></span>
+          <button id="btn-install-update" style="display:none;font-family:'Cinzel',serif;font-size:10px;padding:4px 14px;background:#5a8a2a;border:1px solid #a0d060;color:#e8f8d0;border-radius:3px;cursor:pointer">Restart &amp; Update</button>
+        </div>
+        <div id="update-progress-track" style="display:none;height:4px;background:rgba(80,80,60,0.6);border-radius:2px;overflow:hidden">
+          <div id="update-progress-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#5a8a2a,#a0d060);border-radius:2px;transition:width 0.3s ease"></div>
+        </div>
       `;
-      bar.parentNode.insertBefore(banner, bar);
+      document.getElementById('status-bar').parentNode.insertBefore(bar, document.getElementById('status-bar'));
       document.getElementById('btn-install-update').addEventListener('click', () => {
         window.poeOverlay.installUpdate();
       });
+    }
+    return bar;
+  }
+
+  function showUpdateStatus(data) {
+    if (typeof data === 'string') data = { status: data };
+    const { status } = data;
+    const bar = getOrCreateUpdateBar();
+    const label = document.getElementById('update-label');
+    const btn = document.getElementById('btn-install-update');
+    const track = document.getElementById('update-progress-track');
+    const fill = document.getElementById('update-progress-fill');
+
+    if (status === 'checking') {
+      bar.style.display = 'flex';
+      label.textContent = '🔍 Checking for updates...';
+      btn.style.display = 'none';
+      track.style.display = 'none';
+    } else if (status === 'downloading') {
+      bar.style.display = 'flex';
+      label.textContent = '↓ Downloading update...';
+      btn.style.display = 'none';
+      track.style.display = 'block';
+      fill.style.width = '0%';
+    } else if (status === 'progress') {
+      bar.style.display = 'flex';
+      label.textContent = `↓ Downloading update... ${data.percent}%`;
+      track.style.display = 'block';
+      fill.style.width = `${data.percent}%`;
+    } else if (status === 'up-to-date') {
+      bar.style.display = 'none';
+    } else if (status === 'error') {
+      bar.style.display = 'flex';
+      label.textContent = `⚠ Update error: ${data.message || 'unknown'}`;
+      label.style.color = '#d06060';
+      btn.style.display = 'none';
+      track.style.display = 'none';
+    } else if (status === 'ready') {
+      bar.style.display = 'flex';
+      label.textContent = '⬆ Update ready!';
+      label.style.color = '#a0d060';
+      btn.style.display = 'inline-block';
+      track.style.display = 'none';
     }
   }
 

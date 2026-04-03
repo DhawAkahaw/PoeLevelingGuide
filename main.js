@@ -64,7 +64,7 @@ function createOverlayWindow() {
     frame: false,
     transparent: true,
     alwaysOnTop: true,
-    skipTaskbar: true,
+    skipTaskbar: false,
     resizable: true,
     webPreferences: {
       nodeIntegration: false,

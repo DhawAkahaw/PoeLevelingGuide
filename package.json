@@ -33,7 +33,8 @@
         "publish": {
             "provider": "github",
             "owner": "DhawAkahaw",
-            "repo": "PoeLevelingGuide"
+            "repo": "PoeLevelingGuide",
+            "releaseType": "release"
         },
         "win": {
             "target": [

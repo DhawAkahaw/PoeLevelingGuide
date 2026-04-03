@@ -241,7 +241,7 @@ ipcMain.on('quit-app', () => {
 
 // ─── FETCH MAXROLL GUIDE (from main process to avoid CORS) ──────────────────
 ipcMain.on('install-update', () => {
-  autoUpdater.quitAndInstall();
+  autoUpdater.quitAndInstall(true, true);
 });
 
 ipcMain.handle('fetch-maxroll-guide', async (_, url) => {

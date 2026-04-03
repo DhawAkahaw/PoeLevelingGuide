@@ -1335,14 +1335,14 @@ if (window.poeOverlay) {
     if (!bar) {
       bar = document.createElement('div');
       bar.id = 'update-bar';
-      bar.style.cssText = 'display:none;flex-direction:column;padding:8px 12px;background:rgba(30,40,20,0.97);border-top:1px solid #5a8a2a;flex-shrink:0;gap:4px;';
+      bar.style.cssText = 'display:none;flex-direction:column;padding:8px 12px;background:linear-gradient(180deg,rgba(30,40,15,0.97),rgba(20,28,10,0.97));border-top:1px solid #5a8a2a;flex-shrink:0;gap:4px;';
       bar.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
           <span id="update-label" style="font-family:'Cinzel',serif;font-size:10px;color:#a0d060;letter-spacing:0.1em"></span>
-          <button id="btn-install-update" style="display:none;font-family:'Cinzel',serif;font-size:10px;padding:4px 14px;background:#5a8a2a;border:1px solid #a0d060;color:#e8f8d0;border-radius:3px;cursor:pointer">Restart &amp; Update</button>
+          <button id="btn-install-update" style="display:none;font-family:'Cinzel',serif;font-size:10px;font-weight:700;padding:5px 16px;background:linear-gradient(180deg,#6a9a3a,#4a7a1a);border:1px solid #a0d060;color:#e8f8d0;border-radius:3px;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,0.5);box-shadow:0 0 8px rgba(160,208,96,0.3)">⬆ Restart &amp; Update</button>
         </div>
-        <div id="update-progress-track" style="display:none;height:4px;background:rgba(80,80,60,0.6);border-radius:2px;overflow:hidden">
-          <div id="update-progress-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#5a8a2a,#a0d060);border-radius:2px;transition:width 0.3s ease"></div>
+        <div id="update-progress-track" style="display:none;height:5px;background:rgba(80,80,60,0.6);border-radius:3px;overflow:hidden;border:1px solid rgba(90,138,42,0.3)">
+          <div id="update-progress-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#3a6a1a,#5a8a2a,#a0d060);border-radius:3px;transition:width 0.3s ease;box-shadow:0 0 6px rgba(160,208,96,0.4)"></div>
         </div>
       `;
       document.getElementById('status-bar').parentNode.insertBefore(bar, document.getElementById('status-bar'));

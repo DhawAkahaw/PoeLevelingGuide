@@ -200,7 +200,6 @@ const el = {
   zoneName:        document.getElementById('zone-name'),
   zoneTypeBadge:   document.getElementById('zone-type-badge'),
   currentZone:     document.getElementById('current-zone-name'),
-  zoneNameInput:   document.getElementById('zone-name-input'),
   actPill:         document.getElementById('act-select-dropdown'),
   actSelectDropdown: document.getElementById('act-select-dropdown'),
   stepCounter:     document.getElementById('step-counter'),
@@ -217,7 +216,9 @@ const el = {
   btnNext:         document.getElementById('btn-next'),
   btnPrev:         document.getElementById('btn-prev'),
   btnMinimize:     document.getElementById('btn-minimize'),
+  btnClose:        document.getElementById('btn-close'),
   btnClickthrough: document.getElementById('btn-clickthrough'),
+  btnHudMode:      document.getElementById('btn-hud-mode'),
   header:          document.getElementById('header'),
   // Modal elements
   zoneSelectorModal: document.getElementById('zone-selector-modal'),
@@ -243,6 +244,7 @@ const el = {
   // Guide export/import elements
   btnExportGuide:        document.getElementById('btn-export-guide'),
   btnImportGuide:        document.getElementById('btn-import-guide'),
+  btnImportMaxroll:      document.getElementById('btn-import-maxroll'),
   guideModal:            document.getElementById('guide-modal'),
   guideModalTitle:       document.getElementById('guide-modal-title'),
   guideModalDesc:        document.getElementById('guide-modal-desc'),
@@ -255,13 +257,21 @@ const el = {
 
 async function loadGuide() {
   try {
-    const res  = await fetch('act1-2.json');
+    const res  = await fetch('act1-10.json');
     const json = await res.json();
     guideData  = json.zones;
     await _loadProfilesFromFile();
     await populateProfileSelect();
+    initTooltipSystem();
     renderCurrentStep();
-    setStatus('Guide loaded — waiting for PoE...');
+    setStatus('Guide loaded — fetching item data...');
+    // Load item data in background (non-blocking)
+    loadAllItemData().then(() => {
+      renderCurrentStep(); // re-render with icons
+      setStatus('Guide loaded — waiting for PoE...');
+    }).catch(() => {
+      setStatus('Guide loaded — item data unavailable');
+    });
   } catch (err) {
     setStatus('Error loading guide data');
   }
@@ -287,6 +297,7 @@ function renderCurrentStep() {
     removeAscendancyAlert();
     el.btnPrev.disabled = state.currentZoneIndex === 0;
     el.btnNext.disabled = state.currentZoneIndex === GUIDE_ZONES_ORDERED.length - 1;
+    renderHud();
     return;
   }
 
@@ -334,7 +345,7 @@ function renderCurrentStep() {
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.className = 'action-checkbox';
-      li.innerHTML = `<span class="step-num">${i+1}</span><span class="action-text">${escapeHtml(action)}</span>`;
+      li.innerHTML = `<span class="step-num">${i+1}</span><span class="action-text">${renderActionHtml(action)}</span>`;
       li.appendChild(checkbox);
       
       if (savedCheckedIndices.includes(i)) {
@@ -369,7 +380,7 @@ function renderCurrentStep() {
   if (zoneInfo.rewards && zoneInfo.rewards.length > 0) {
     el.rewardsSection.classList.remove('hidden');
     el.rewardsList.innerHTML = zoneInfo.rewards.map(r =>
-      `<div class="reward-item"><span class="reward-npc">${escapeHtml(r.npc)}</span><span>${escapeHtml(r.reward)}</span></div>`
+      `<div class="reward-item"><span class="reward-npc">${escapeHtml(r.npc)}</span><span>${renderActionHtml(r.reward)}</span></div>`
     ).join('');
   } else {
     el.rewardsSection.classList.add('hidden');
@@ -393,6 +404,9 @@ function renderCurrentStep() {
 
   el.btnPrev.disabled = state.currentZoneIndex === 0;
   el.btnNext.disabled = state.currentZoneIndex === GUIDE_ZONES_ORDERED.length - 1;
+
+  // Keep HUD in sync
+  renderHud();
 }
 
 function showAscendancyAlert(ascendancy) {
@@ -541,6 +555,67 @@ function flashCard() {
 el.btnNext.addEventListener('click', goNext);
 el.btnPrev.addEventListener('click', goPrev);
 el.btnMinimize.addEventListener('click', () => document.getElementById('content').classList.toggle('hidden'));
+el.btnClose.addEventListener('click', () => {
+  if (window.poeOverlay && window.poeOverlay.quitApp) {
+    window.poeOverlay.quitApp();
+  }
+});
+
+// ─── HUD MODE (compact in-game floating overlay) ─────────────────────────────
+let _hudMode = false;
+let _hudPinned = false;
+const hudPanel     = document.getElementById('hud-panel');
+const hudZoneName  = document.getElementById('hud-zone-name');
+const hudStep      = document.getElementById('hud-step');
+const hudActions   = document.getElementById('hud-actions');
+
+function renderHud() {
+  if (!_hudMode) return;
+  const zoneName = GUIDE_ZONES_ORDERED[state.currentZoneIndex];
+  hudZoneName.textContent = zoneName || '—';
+  hudStep.textContent = `${state.currentZoneIndex + 1}/${GUIDE_ZONES_ORDERED.length}`;
+
+  const actions = getZoneActions(zoneName);
+  hudActions.innerHTML = '';
+  actions.forEach(action => {
+    const li = document.createElement('li');
+    if (action.startsWith('═══')) {
+      li.className = 'hud-section-header';
+      li.textContent = action.replace(/═/g, '').trim();
+    } else {
+      li.innerHTML = renderActionHtml(action);
+    }
+    hudActions.appendChild(li);
+  });
+}
+
+function toggleHudMode(force) {
+  _hudMode = typeof force === 'boolean' ? force : !_hudMode;
+  document.body.classList.toggle('hud-mode', _hudMode);
+  el.btnHudMode.classList.toggle('btn-edit-active', _hudMode);
+
+  if (_hudMode) {
+    _hudPinned = false;
+    hudPanel.classList.remove('hud-pinned');
+    renderHud();
+  }
+}
+
+function toggleHudPin() {
+  if (!_hudMode) {
+    // First press: enter HUD mode (pinned)
+    toggleHudMode(true);
+    _hudPinned = true;
+    hudPanel.classList.add('hud-pinned');
+  } else {
+    // Second press: exit HUD mode entirely, back to full overlay
+    toggleHudMode(false);
+  }
+}
+
+el.btnHudMode.addEventListener('click', () => toggleHudMode());
+
+document.getElementById('btn-hud-exit').addEventListener('click', () => toggleHudMode(false));
 
 // ─── ZONE SELECTOR MODAL ────────────────────────────────────────────────────
 function openZoneSelectorModal() {
@@ -649,38 +724,7 @@ el.zoneJumpInput.addEventListener('keypress', (e) => {
 
 el.zoneJumpInput.addEventListener('blur', submitZoneJump);
 
-// ─── ZONE NAME INPUT (Click zone name to edit) ─────────────────────────────
-el.currentZone.addEventListener('click', () => {
-  el.currentZone.classList.add('hidden');
-  el.zoneNameInput.classList.remove('hidden');
-  el.zoneNameInput.value = el.currentZone.textContent;
-  el.zoneNameInput.focus();
-  el.zoneNameInput.select();
-});
-
-function submitZoneName() {
-  const newName = el.zoneNameInput.value.trim();
-  if (newName) {
-    el.currentZone.textContent = newName;
-    setStatus(`Zone renamed to: ${newName}`);
-  }
-  cancelZoneNameEdit();
-}
-
-function cancelZoneNameEdit() {
-  el.zoneNameInput.classList.add('hidden');
-  el.currentZone.classList.remove('hidden');
-}
-
-el.zoneNameInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') {
-    submitZoneName();
-  } else if (e.key === 'Escape') {
-    cancelZoneNameEdit();
-  }
-});
-
-el.zoneNameInput.addEventListener('blur', submitZoneName);
+// Zone name is display-only — no click-to-edit
 
 // ─── LEVEL INPUT (Click level to edit manually) ──────────────────────────────
 el.levelDisplay.addEventListener('click', () => {
@@ -896,6 +940,7 @@ function closeGuideModal() {
 
 el.btnExportGuide.addEventListener('click', () => openGuideModal('export'));
 el.btnImportGuide.addEventListener('click', () => openGuideModal('import'));
+el.btnImportMaxroll.addEventListener('click', openMaxrollModal);
 
 el.btnGuideModalClose.addEventListener('click', closeGuideModal);
 el.btnGuideModalCancel.addEventListener('click', closeGuideModal);
@@ -966,6 +1011,324 @@ el.btnGuideModalAction.addEventListener('click', async () => {
   }
 });
 
+// ─── MAXROLL IMPORT ─────────────────────────────────────────────────────────
+const maxrollModal       = document.getElementById('maxroll-modal');
+const maxrollUrlInput    = document.getElementById('maxroll-url-input');
+const maxrollProfileName = document.getElementById('maxroll-profile-name');
+const maxrollStatus      = document.getElementById('maxroll-status');
+const btnMaxrollImport   = document.getElementById('btn-maxroll-import');
+const btnMaxrollCancel   = document.getElementById('btn-maxroll-cancel');
+const btnMaxrollClose    = document.getElementById('btn-maxroll-modal-close');
+const maxrollBackdrop    = document.querySelector('.maxroll-modal-backdrop');
+
+function openMaxrollModal() {
+  maxrollModal.classList.remove('hidden');
+  maxrollUrlInput.value = '';
+  maxrollProfileName.value = '';
+  maxrollStatus.textContent = '';
+  maxrollUrlInput.focus();
+}
+
+function closeMaxrollModal() {
+  maxrollModal.classList.add('hidden');
+}
+
+btnMaxrollCancel.addEventListener('click', closeMaxrollModal);
+btnMaxrollClose.addEventListener('click', closeMaxrollModal);
+maxrollBackdrop.addEventListener('click', closeMaxrollModal);
+
+// Parse Maxroll guide HTML into zone-based actions (supports both leveling and build guides)
+function parseMaxrollGuide(html) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  
+  const titleEl = doc.querySelector('h1');
+  const guideTitle = titleEl ? titleEl.textContent.trim() : 'Maxroll Guide';
+  
+  const TOWN_ZONES = {
+    1: "Lioneye's Watch",
+    2: "The Forest Encampment",
+    3: "The Sarn Encampment",
+    4: "Highgate",
+    5: "Overseer's Tower",
+    6: "Lioneye's Watch (Act 6)",
+    7: "The Bridge Encampment",
+    8: "Sarn Ramparts",
+    9: "Highgate (Act 9)",
+    10: "Oriath (Act 10)",
+  };
+
+  // ─── ATTEMPT 1: Leveling guide (act-X-header IDs) ────────────────────────
+  const actData = {};
+  for (let actNum = 1; actNum <= 10; actNum++) {
+    const header = doc.querySelector(`#act-${actNum}-header`);
+    if (!header) continue;
+    actData[actNum] = [];
+    let sibling = header.nextElementSibling;
+    while (sibling) {
+      if (sibling.tagName === 'H4' || sibling.tagName === 'H3' || sibling.tagName === 'H2') break;
+      if (sibling.tagName === 'UL') {
+        sibling.querySelectorAll(':scope > li').forEach(li => {
+          const triggerClone = li.cloneNode(true);
+          triggerClone.querySelectorAll('ul').forEach(u => u.remove());
+          const triggerText = triggerClone.textContent.trim();
+          const mark = li.querySelector('mark');
+          const levelMatch = mark ? mark.textContent.match(/Level\s+(\d+)/i) : null;
+          const level = levelMatch ? parseInt(levelMatch[1]) : null;
+          let trigger = triggerText;
+          if (level) trigger = triggerText.replace(/^Level\s+\d+:\s*/i, '').trim();
+          const actions = [];
+          const nestedUL = li.querySelector(':scope > ul');
+          if (nestedUL) {
+            nestedUL.querySelectorAll(':scope > li').forEach(subLi => {
+              const subClone = subLi.cloneNode(true);
+              subClone.querySelectorAll('ul').forEach(u => u.remove());
+              const actionText = subClone.textContent.trim();
+              if (actionText) actions.push(actionText);
+              const deepUL = subLi.querySelector(':scope > ul');
+              if (deepUL) {
+                deepUL.querySelectorAll(':scope > li').forEach(deepLi => {
+                  const deepText = deepLi.textContent.trim();
+                  if (deepText) actions.push('  ' + deepText);
+                });
+              }
+            });
+          }
+          if (trigger || actions.length > 0) actData[actNum].push({ trigger, level, actions });
+        });
+      }
+      sibling = sibling.nextElementSibling;
+    }
+  }
+
+  // Fallback: h4 text "Act X" without IDs
+  if (Object.keys(actData).length === 0) {
+    doc.querySelectorAll('h4').forEach(h4 => {
+      const actMatch = h4.textContent.trim().match(/^Act\s+(\d+)$/i);
+      if (!actMatch) return;
+      const currentAct = parseInt(actMatch[1]);
+      if (!actData[currentAct]) actData[currentAct] = [];
+      let sib = h4.nextElementSibling;
+      while (sib && sib.tagName !== 'H4' && sib.tagName !== 'H3') {
+        if (sib.tagName === 'UL') {
+          sib.querySelectorAll(':scope > li').forEach(li => {
+            const clone = li.cloneNode(true);
+            clone.querySelectorAll('ul').forEach(u => u.remove());
+            const text = clone.textContent.trim();
+            const mark = li.querySelector('mark');
+            const lm = mark ? mark.textContent.match(/Level\s+(\d+)/i) : null;
+            const level = lm ? parseInt(lm[1]) : null;
+            const trigger = level ? text.replace(/^Level\s+\d+:\s*/i, '') : text;
+            const actions = [];
+            const nested = li.querySelector(':scope > ul');
+            if (nested) nested.querySelectorAll(':scope > li').forEach(sub => actions.push(sub.textContent.trim()));
+            if (trigger || actions.length) actData[currentAct].push({ trigger, level, actions });
+          });
+        }
+        sib = sib.nextElementSibling;
+      }
+    });
+  }
+
+  // If leveling guide data found, map to zones & return
+  if (Object.keys(actData).length > 0) {
+    const zoneActions = {};
+    for (const [actStr, groups] of Object.entries(actData)) {
+      const actNum = parseInt(actStr);
+      const townZone = TOWN_ZONES[actNum];
+      if (!townZone) continue;
+      const allActions = [];
+      for (const group of groups) {
+        const header = group.level ? `[Lv${group.level}] ${group.trigger}` : group.trigger;
+        if (group.actions.length > 0) {
+          allActions.push(header + ':');
+          group.actions.forEach(a => allActions.push('  • ' + a));
+        } else {
+          allActions.push(header);
+        }
+      }
+      if (allActions.length > 0) zoneActions[townZone] = allActions;
+    }
+    return { guideTitle, zoneActions, actData };
+  }
+
+  // ─── ATTEMPT 2: Build guide (section-header IDs) ──────────────────────────
+  // Extract content between known section headers using HTML string positions
+  const buildSections = [
+    { id: 'skills-header',     label: '🎯 Skills & Gems' },
+    { id: 'ascendancy-header', label: '⚔ Ascendancy' },
+    { id: 'passives-header',   label: '🌳 Passive Tree' },
+    { id: 'gearing-header',    label: '🛡 Gearing' },
+    { id: 'faq-header',        label: '❓ FAQ' },
+  ];
+
+  function extractLiItems(sectionHtml) {
+    const fragDoc = parser.parseFromString('<div>' + sectionHtml + '</div>', 'text/html');
+    const items = [];
+    fragDoc.querySelectorAll('li').forEach(li => {
+      // Skip li nested inside another li (sub-list items)
+      if (li.parentElement && li.parentElement.closest('li')) return;
+      const clone = li.cloneNode(true);
+      clone.querySelectorAll('ul, ol').forEach(u => u.remove());
+      const text = clone.textContent.trim();
+      if (text && text.length > 10) items.push(text);
+    });
+    return items;
+  }
+
+  const extractedSections = [];
+
+  for (let i = 0; i < buildSections.length; i++) {
+    const { id, label } = buildSections[i];
+    const startIdx = html.indexOf('id="' + id + '"');
+    if (startIdx === -1) continue;
+
+    // Find the end: next section header or end of HTML
+    let endIdx = html.length;
+    for (let j = i + 1; j < buildSections.length; j++) {
+      const nextIdx = html.indexOf('id="' + buildSections[j].id + '"');
+      if (nextIdx > startIdx) { endIdx = nextIdx; break; }
+    }
+
+    const sectionHtml = html.substring(startIdx, endIdx);
+    const items = extractLiItems(sectionHtml);
+    if (items.length > 0) extractedSections.push({ label, items });
+  }
+
+  if (extractedSections.length === 0) {
+    return { guideTitle, zoneActions: {}, actData: {} };
+  }
+
+  // Map build guide sections to town zones (one section per zone, navigable with prev/next)
+  const zoneActions = {};
+  const townNames = Object.values(TOWN_ZONES);
+
+  extractedSections.forEach((section, i) => {
+    const zoneName = townNames[i] || townNames[townNames.length - 1];
+    // Split long sections across multiple zones (max ~12 items per page)
+    const MAX_PER_PAGE = 12;
+    if (section.items.length <= MAX_PER_PAGE) {
+      zoneActions[zoneName] = ['═══ ' + section.label + ' ═══', ...section.items];
+    } else {
+      // Page 1 goes to the current zone
+      let page = 0;
+      for (let offset = 0; offset < section.items.length; offset += MAX_PER_PAGE) {
+        const chunk = section.items.slice(offset, offset + MAX_PER_PAGE);
+        const pageLabel = page === 0
+          ? '═══ ' + section.label + ' ═══'
+          : '═══ ' + section.label + ' (cont.) ═══';
+        const targetZone = townNames[i + page] || townNames[townNames.length - 1];
+        // Avoid overwriting an already-assigned zone
+        if (zoneActions[targetZone]) {
+          zoneActions[targetZone].push('', pageLabel, ...chunk);
+        } else {
+          zoneActions[targetZone] = [pageLabel, ...chunk];
+        }
+        page++;
+      }
+    }
+  });
+
+  return { guideTitle, zoneActions, actData: {} };
+}
+
+btnMaxrollImport.addEventListener('click', async () => {
+  let url = maxrollUrlInput.value.trim();
+  const profileName = maxrollProfileName.value.trim();
+  
+  if (!url) {
+    maxrollStatus.textContent = 'Enter a Maxroll URL';
+    maxrollStatus.style.color = 'var(--red-death)';
+    return;
+  }
+  
+  if (!profileName) {
+    maxrollStatus.textContent = 'Enter a profile name';
+    maxrollStatus.style.color = 'var(--red-death)';
+    return;
+  }
+  
+  // Add https if missing
+  if (!url.startsWith('http')) url = 'https://' + url;
+  
+  // Validate
+  if (!url.includes('maxroll.gg/poe/build-guides/')) {
+    maxrollStatus.textContent = 'URL must be a maxroll.gg/poe/build-guides/ page';
+    maxrollStatus.style.color = 'var(--red-death)';
+    return;
+  }
+  
+  maxrollStatus.textContent = 'Fetching guide from Maxroll...';
+  maxrollStatus.style.color = 'var(--gold)';
+  btnMaxrollImport.disabled = true;
+  
+  try {
+    if (!window.poeOverlay || !window.poeOverlay.fetchMaxrollGuide) {
+      maxrollStatus.textContent = 'Maxroll fetch not available (dev mode?)';
+      maxrollStatus.style.color = 'var(--red-death)';
+      return;
+    }
+    
+    const result = await window.poeOverlay.fetchMaxrollGuide(url);
+    
+    if (result.error) {
+      maxrollStatus.textContent = 'Error: ' + result.error;
+      maxrollStatus.style.color = 'var(--red-death)';
+      return;
+    }
+    
+    maxrollStatus.textContent = 'Parsing guide data...';
+    
+    const { guideTitle, zoneActions } = parseMaxrollGuide(result.html);
+    const zoneCount = Object.keys(zoneActions).length;
+    
+    if (zoneCount === 0) {
+      maxrollStatus.textContent = 'No guide data found. Make sure this is a valid Maxroll build guide URL.';
+      maxrollStatus.style.color = 'var(--red-death)';
+      return;
+    }
+    
+    // Create the profile
+    const created = await createProfile(profileName);
+    if (!created) {
+      maxrollStatus.textContent = `Profile "${profileName}" already exists`;
+      maxrollStatus.style.color = 'var(--red-death)';
+      return;
+    }
+    
+    // Load the new profile
+    activeProfile = profileName;
+    await populateProfileSelect();
+    el.profileSelect.value = profileName;
+    
+    // Apply the guide actions as custom guide data
+    _customGuideData = {};
+    for (const [zoneName, actions] of Object.entries(zoneActions)) {
+      _customGuideData[zoneName] = { actions };
+    }
+    
+    await saveCustomGuide();
+    await saveCurrentToProfile();
+    renderCurrentStep();
+    
+    maxrollStatus.textContent = `Imported "${guideTitle}" — ${zoneCount} zones with actions`;
+    maxrollStatus.style.color = 'var(--green-ok)';
+    
+    setTimeout(() => {
+      closeMaxrollModal();
+      setStatus(`Maxroll guide imported: ${profileName}`);
+      flashCard();
+    }, 1500);
+    
+  } catch (e) {
+    console.error('Maxroll import error:', e);
+    maxrollStatus.textContent = 'Failed to parse guide: ' + e.message;
+    maxrollStatus.style.color = 'var(--red-death)';
+  } finally {
+    btnMaxrollImport.disabled = false;
+  }
+});
+
 if (window.poeOverlay) {
   window.poeOverlay.onZoneEntered(handleZoneEntered);
   window.poeOverlay.onLevelUp(handleLevelUp);
@@ -976,6 +1339,26 @@ if (window.poeOverlay) {
   });
   window.poeOverlay.onHotkeyNext(goNext);
   window.poeOverlay.onHotkeyPrev(goPrev);
+  window.poeOverlay.onToggleHud(() => toggleHudPin());
+  window.poeOverlay.onUpdateStatus(({ status }) => {
+    if (status === 'downloading') {
+      setStatus('\u2193 Downloading update...');
+    } else if (status === 'ready') {
+      // Show a sticky update banner in the status bar
+      const bar = document.getElementById('status-bar');
+      const banner = document.createElement('div');
+      banner.id = 'update-banner';
+      banner.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:5px 12px;background:rgba(42,58,26,0.95);border-top:1px solid #5a8a2a;flex-shrink:0;gap:8px;';
+      banner.innerHTML = `
+        <span style="font-family:'Cinzel',serif;font-size:10px;color:#a0d060;letter-spacing:0.1em">⬆ Update ready</span>
+        <button id="btn-install-update" style="font-family:'Cinzel',serif;font-size:10px;padding:3px 10px;background:#5a8a2a;border:1px solid #a0d060;color:#e8f8d0;border-radius:3px;cursor:pointer">Restart &amp; Install</button>
+      `;
+      bar.parentNode.insertBefore(banner, bar);
+      document.getElementById('btn-install-update').addEventListener('click', () => {
+        window.poeOverlay.installUpdate();
+      });
+    }
+  });
   window.poeOverlay.onLogStatus((data) => {
     setConnected(data.connected);
     setStatus(data.connected ? 'Watching log file' : 'Client.txt not found — check main.js path');

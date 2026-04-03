@@ -1,137 +1,106 @@
-# PoE Leveling Overlay
+# PoE Leveling Guide Overlay
 
-A lightweight Electron overlay for Path of Exile that auto-detects your current zone from `Client.txt` and shows you step-by-step leveling instructions.
-
----
-TEST TEST
-## ✅ Prerequisites
-
-Install these before anything else:
-
-| Tool | Download | Why |
-|------|----------|-----|
-| **Node.js** (v18+) | https://nodejs.org | Runs the app |
-| **npm** | Comes with Node.js | Installs packages |
-| **Git** (optional) | https://git-scm.com | To clone/manage the project |
-
-To verify you have Node.js:
-```bash
-node --version   # should print v18.x.x or higher
-npm --version    # should print 9.x.x or higher
-```
+A lightweight always-on-top overlay for Path of Exile that auto-detects your current zone from `Client.txt` and shows step-by-step leveling actions, gem tooltips, optional/mandatory filtering, and a compact HUD mode for in-game use.
 
 ---
 
-## 🚀 Setup (first time)
+## ⬇️ Download
 
-```bash
-# 1. Navigate to the project folder
-cd poe-overlay
+> **No Node.js or coding required** — just download and run the installer.
 
-# 2. Install dependencies (Electron + chokidar)
-npm install
+### [⬇ Download Latest Release](https://github.com/DhawAkahaw/PoeLevelingGuide/releases/latest)
 
-# 3. Run the overlay
-npm start
-```
+1. Go to the link above
+2. Download `PoE.Leveling.Guide.Setup.x.x.x.exe`
+3. Run the installer — it installs silently and launches automatically
+4. The overlay appears. Done.
 
-That's it. The overlay window will appear.
+**Auto-updates:** When a new version is pushed, the app will download it in the background and show a green *"Restart & Install"* banner — one click to update.
+
+---
+
+## 🎮 How to Use
+
+| Control | Action |
+|---------|--------|
+| `Ctrl+D` | Toggle HUD mode (compact in-game view) |
+| `Ctrl+→` | Next zone |
+| `Ctrl+←` | Previous zone |
+| `◉` button | Switch between full panel and HUD mode |
+| `⊙` button | Toggle click-through (game gets all mouse clicks) |
+| `−` button | Minimize/expand panel |
+| `🌐` button | Import any Maxroll build guide by URL |
+| Click action | Mark it done (strikethrough) |
+
+### HUD Mode
+Press `Ctrl+D` in-game to switch to a minimal floating panel in the top-left. It fades to near-invisible and reveals on hover. Press `Ctrl+D` again to go back to the full overlay.
 
 ---
 
 ## ⚙️ Configuration
 
-### Set your PoE log file path
+### PoE Log File Path
 
-Open `src/main/main.js` and find the `POE_LOG_PATHS` array at the top.
-Add your specific path if it's not already listed:
+Open `main.js` and check the `POE_LOG_PATHS` array at the top. Add your path if needed:
 
 ```js
 const POE_LOG_PATHS = [
-  'C:/Program Files (x86)/Grinding Gear Games/Path of Exile/logs/Client.txt',
-  // your path here...
+  'C:/Program Files (x86)/Steam/steamapps/common/Path of Exile/logs/Client.txt',
+  // add your path here if different
 ];
 ```
 
 **Default locations:**
 - Steam (Windows): `C:\Program Files (x86)\Steam\steamapps\common\Path of Exile\logs\Client.txt`
-- Standalone (Windows): `C:\Program Files (x86)\Grinding Gear Games\Path of Exile\logs\Client.txt`
-- Linux/Steam: `~/.local/share/Steam/steamapps/common/Path of Exile/logs/Client.txt`
+- Standalone: `C:\Program Files (x86)\Grinding Gear Games\Path of Exile\logs\Client.txt`
 
-### Change hotkeys
-
-Also at the top of `src/main/main.js`:
+### Hotkeys
 
 ```js
-const HOTKEY_TOGGLE = 'Ctrl+D';      // Show/hide overlay
-const HOTKEY_NEXT   = 'Ctrl+Right';  // Next zone step
-const HOTKEY_PREV   = 'Ctrl+Left';   // Previous zone step
+const HOTKEY_TOGGLE = 'Ctrl+D';      // Toggle HUD mode
+const HOTKEY_NEXT   = 'Ctrl+Right';  // Next zone
+const HOTKEY_PREV   = 'Ctrl+Left';   // Previous zone
 ```
 
 ---
 
-## 🎮 Usage
+## 🛠️ Dev Setup (contributors)
 
-1. Start Path of Exile
-2. Start the overlay (`npm start`)
-3. The green indicator in the header means it's reading your log file
-4. Enter any zone in PoE — the overlay auto-jumps to that zone's guide
-5. Use **Ctrl+D** to toggle visibility while gaming
+```bash
+git clone https://github.com/DhawAkahaw/PoeLevelingGuide.git
+cd PoeLevelingGuide
+npm install
+npm start
+```
 
-### Controls
+To build a local `.exe`:
+```bash
+npm run build        # builds to dist/ — not published
+```
 
-| Control | Action |
-|---------|--------|
-| `Ctrl+D` | Show / hide overlay |
-| `Ctrl+→` | Next zone manually |
-| `Ctrl+←` | Previous zone manually |
-| `⊙` button | Toggle click-through mode |
-| `−` button | Collapse/expand content |
-| Click any action | Mark it done (strikethrough) |
+To publish a new release to GitHub (maintainers only):
+```bash
+git tag v1.x.x
+git push origin v1.x.x   # triggers GitHub Actions → builds exe → creates release
+```
 
 ---
 
 ## 📁 Project Structure
 
 ```
-poe-overlay/
-├── src/
-│   ├── main/
-│   │   ├── main.js       ← Electron main process (log watcher, hotkeys)
-│   │   └── preload.js    ← Secure IPC bridge
-│   ├── renderer/
-│   │   ├── index.html    ← Overlay UI
-│   │   ├── style.css     ← Dark gaming aesthetic
-│   │   └── app.js        ← Guide engine + UI logic
-│   └── guide-data/
-│       └── act1-2.json   ← Leveling guide data
-└── package.json
+PoeLevelingGuide/
+├── main.js          ← Electron main process (log watcher, hotkeys, updater)
+├── preload.js       ← Secure IPC bridge
+├── index.html       ← Overlay UI
+├── style.css        ← PoE dark theme
+├── app.js           ← Guide engine + UI logic
+├── poe-item-data.js ← Gem/item tooltip system
+├── act1-10.json     ← Full Acts 1-10 leveling guide data
+└── .github/
+    └── workflows/
+        └── release.yml  ← Auto-build on git tag push
 ```
-
----
-
-## ➕ Adding More Guide Content
-
-Edit `src/guide-data/act1-2.json` to add more zones.
-Each zone entry looks like:
-
-```json
-"The Mud Flats": {
-  "act": 1,
-  "type": "outdoor",
-  "actions": [
-    "Activate the Waypoint",
-    "Collect 3 Glyphs for Nessa's quest"
-  ],
-  "rewards": [
-    { "npc": "Nessa", "reward": "Quicksilver Flask" }
-  ],
-  "tips": "Glyphs glow cyan on the ground.",
-  "next": "The Submerged Passage"
-}
-```
-
-Also add the zone name (in order) to the `GUIDE_ZONES_ORDERED` array in `src/renderer/app.js`.
 
 ---
 

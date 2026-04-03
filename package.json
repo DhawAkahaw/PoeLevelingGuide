@@ -1,16 +1,58 @@
 {
-  "name": "poe-leveling-overlay",
-  "version": "1.0.0",
-  "description": "Path of Exile Leveling Guide Overlay",
-  "main": "main.js",
-  "scripts": {
-    "start": "electron .",
-    "dev": "electron . --dev"
-  },
-  "devDependencies": {
-    "electron": "^28.0.0"
-  },
-  "dependencies": {
-    "chokidar": "^3.6.0"
-  }
+    "name": "poe-leveling-overlay",
+    "version": "1.0.0",
+    "description": "Path of Exile Leveling Guide Overlay",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "dev": "electron . --dev",
+        "build": "electron-builder --win --publish never",
+        "release": "electron-builder --win --publish always"
+    },
+    "devDependencies": {
+        "@napi-rs/canvas": "^0.1.97",
+        "electron": "^28.0.0",
+        "electron-builder": "^26.8.1",
+        "png-to-ico": "^3.0.1"
+    },
+    "dependencies": {
+        "chokidar": "^3.6.0",
+        "electron-updater": "^6.8.3"
+    },
+    "build": {
+        "files": [
+            "**/*",
+            "!node_modules/**",
+            "node_modules/chokidar/**",
+            "node_modules/electron-updater/**",
+            "node_modules/electron-log/**",
+            "!dist/**",
+            "!.git/**",
+            "!*.md",
+            "!Reference.xml"
+        ],
+        "productName": "PoE Leveling Guide",
+        "publish": {
+            "provider": "github",
+            "owner": "DhawAkahaw",
+            "repo": "PoeLevelingGuide"
+        },
+        "win": {
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": [
+                        "x64"
+                    ]
+                }
+            ]
+        },
+        "asar": true,
+        "appId": "com.dhawakahaw.poeoverlay",
+        "nsis": {
+            "oneClick": true,
+            "perMachine": false,
+            "deleteAppDataOnUninstall": false
+        }
+    }
 }

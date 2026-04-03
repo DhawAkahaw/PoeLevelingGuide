@@ -1,2 +1,4 @@
 node_modules
 poe-profiles.json
+dist/
+scripts/

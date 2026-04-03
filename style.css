@@ -31,13 +31,14 @@
 html, body {
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow: visible;
   background: transparent;
 }
 
 #app {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
   background: var(--bg-base);
   border: 1px solid var(--border-gold);
   border-radius: 6px;
@@ -48,8 +49,32 @@ html, body {
   overflow: hidden;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  /* Subtle top glow */
-  box-shadow: 0 0 0 1px rgba(200,150,60,0.1), inset 0 1px 0 rgba(200,150,60,0.12);
+  /* Subtle top glow + PoE-style double border */
+  box-shadow:
+    0 0 0 1px rgba(200,150,60,0.1),
+    inset 0 1px 0 rgba(200,150,60,0.12),
+    0 0 0 2px rgba(12,11,8,0.9),
+    0 0 0 3px rgba(200,150,60,0.2),
+    0 0 20px 2px rgba(0,0,0,0.5);
+  /* PoE skill tree background texture */
+  position: relative;
+}
+
+#app::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/skilltree/background-1.png');
+  background-repeat: repeat;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 6px;
+}
+
+#app > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* ── HEADER ──────────────────────────────────────────────────────── */
@@ -63,6 +88,44 @@ html, body {
   -webkit-app-region: drag;
   user-select: none;
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Ornamental group background watermark centered in header */
+#header::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  background-image: url('assets/skilltree/group-background-0.png');
+  background-size: 800px auto;
+  /* Show a centered portion of the first ornate circle */
+  background-position: -18px -18px;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Golden ornamental line below header */
+#header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 5%;
+  right: 5%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(200,150,60,0.5) 20%,
+    rgba(232,184,74,0.8) 50%,
+    rgba(200,150,60,0.5) 80%,
+    transparent
+  );
+  z-index: 1;
 }
 
 .drag-region { -webkit-app-region: drag; }
@@ -77,12 +140,14 @@ html, body {
 .logo-gem {
   color: var(--gold-bright);
   font-size: 14px;
-  text-shadow: 0 0 8px rgba(232, 184, 74, 0.6);
+  text-shadow: 0 0 8px rgba(232, 184, 74, 0.6), 0 0 16px rgba(232, 184, 74, 0.3);
   animation: gemPulse 3s ease-in-out infinite;
+  position: relative;
+  z-index: 1;
 }
 
 @keyframes gemPulse {
-  0%, 100% { opacity: 1; text-shadow: 0 0 8px rgba(232,184,74,0.6); }
+  0%, 100% { opacity: 1; text-shadow: 0 0 8px rgba(232,184,74,0.6), 0 0 16px rgba(232,184,74,0.3); }
   50%       { opacity: 0.7; text-shadow: 0 0 4px rgba(232,184,74,0.3); }
 }
 
@@ -92,6 +157,9 @@ html, body {
   font-weight: 700;
   letter-spacing: 0.18em;
   color: var(--gold);
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 0 12px rgba(200,150,60,0.2);
 }
 
 .header-right {
@@ -143,6 +211,11 @@ html, body {
   color: var(--gold-bright);
 }
 
+.icon-btn-close:hover {
+  border-color: var(--red-death);
+  color: var(--red-death);
+}
+
 /* ── ZONE BANNER ─────────────────────────────────────────────────── */
 #zone-banner {
   padding: 10px 14px;
@@ -152,6 +225,24 @@ html, body {
   align-items: center;
   gap: 10px;
   animation: bannerSlide 0.4s ease-out;
+  position: relative;
+}
+
+/* Ornamental bottom edge on zone banner */
+#zone-banner::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(200,150,60,0.3) 30%,
+    rgba(232,184,74,0.5) 50%,
+    rgba(200,150,60,0.3) 70%,
+    transparent
+  );
 }
 
 #zone-banner.hidden { display: none; }
@@ -196,11 +287,13 @@ html, body {
   gap: 8px;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
 }
 
-#content::-webkit-scrollbar { width: 4px; }
-#content::-webkit-scrollbar-track { background: transparent; }
-#content::-webkit-scrollbar-thumb { background: var(--border-dim); border-radius: 2px; }
+#content::-webkit-scrollbar { width: 5px; }
+#content::-webkit-scrollbar-track { background: rgba(12,11,8,0.5); }
+#content::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+#content::-webkit-scrollbar-thumb:hover { background: var(--gold); }
 
 /* ── PROFILE CARD ────────────────────────────────────────────────── */
 .profile-card {
@@ -324,9 +417,40 @@ html, body {
   border-radius: var(--radius);
   padding: 10px 12px;
   transition: border-color 0.2s;
+  position: relative;
 }
 
 .card:hover { border-color: var(--border-gold); }
+
+/* Golden corner accents on cards */
+.card::before,
+.card::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+}
+.card::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid var(--gold-dim);
+  border-left: 2px solid var(--gold-dim);
+  border-radius: 2px 0 0 0;
+}
+.card::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid var(--gold-dim);
+  border-right: 2px solid var(--gold-dim);
+  border-radius: 0 0 2px 0;
+}
+.card:hover::before,
+.card:hover::after {
+  opacity: 0.7;
+}
 
 .card-header {
   display: flex;
@@ -421,15 +545,9 @@ html, body {
   font-weight: 600;
   color: var(--text-primary);
   flex: 1;
-  cursor: pointer;
+  cursor: default;
   padding: 2px 6px;
   border-radius: 2px;
-  transition: all 0.2s ease;
-}
-
-.current-zone-name:hover {
-  background: rgba(200, 150, 60, 0.1);
-  color: var(--gold-bright);
 }
 
 .zone-name-input {
@@ -490,7 +608,15 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  overflow-y: auto;
+  max-height: 260px;
+  min-height: 80px;
+  flex-shrink: 0;
 }
+
+.actions-list::-webkit-scrollbar { width: 3px; }
+.actions-list::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+.actions-list::-webkit-scrollbar-track { background: transparent; }
 
 .actions-list li {
   display: flex;
@@ -508,7 +634,7 @@ html, body {
 
 .actions-list li:hover {
   background: rgba(200,150,60,0.08);
-  border-left-color: var(--gold-dim);
+  border-left-color: var(--gold);
 }
 
 .actions-list li .step-num {
@@ -547,8 +673,40 @@ html, body {
 /* ── REWARDS ─────────────────────────────────────────────────────── */
 .rewards-section {
   margin-top: 10px;
-  border-top: 1px solid var(--border-dim);
+  border-top: none;
   padding-top: 8px;
+  position: relative;
+}
+
+/* PoE-style ornamental separator above rewards */
+.rewards-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 5%;
+  right: 5%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(200,150,60,0.35) 20%,
+    rgba(232,184,74,0.6) 50%,
+    rgba(200,150,60,0.35) 80%,
+    transparent
+  );
+}
+
+/* Diamond ornament center */
+.rewards-section::after {
+  content: '◆';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  color: var(--gold-dim);
+  background: var(--bg-card);
+  padding: 0 6px;
+  z-index: 1;
 }
 
 .rewards-section.hidden { display: none; }
@@ -614,14 +772,7 @@ html, body {
 .tip-icon { flex-shrink: 0; margin-top: 1px; }
 
 /* ── NEXT ZONE CARD ──────────────────────────────────────────────── */
-.next-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-style: dashed;
-  opacity: 0.7;
-}
+/* (main .next-card rules are in the theme section below) */
 
 .next-zone-name {
   font-family: var(--font-display);
@@ -631,27 +782,7 @@ html, body {
 }
 
 /* ── LEVEL CARD ──────────────────────────────────────────────────── */
-.level-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 12px;
-}
-
-.level-display {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--gold-bright);
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 2px;
-  transition: all 0.2s ease;
-}
-
-.level-display:hover {
-  background: rgba(200, 150, 60, 0.1);
-}
+/* (main .level-card and .level-display rules are in the theme section below) */
 
 .level-input {
   font-family: var(--font-display);
@@ -684,6 +815,24 @@ html, body {
   background: var(--bg-header);
   border-top: 1px solid var(--border-dim);
   flex-shrink: 0;
+  position: relative;
+}
+
+/* Ornamental top edge on status bar */
+#status-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 5%;
+  right: 5%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(200,150,60,0.3) 20%,
+    rgba(232,184,74,0.5) 50%,
+    rgba(200,150,60,0.3) 80%,
+    transparent
+  );
 }
 
 #status-text {
@@ -1005,3 +1154,578 @@ html, body {
   border-color: var(--border-gold);
   box-shadow: 0 0 8px rgba(200, 150, 60, 0.2);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   POE ITEM TOOLTIPS — Exact in-game style (like Maxroll)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Inline item links in action text ─────────────────────────────── */
+.poe-item-link {
+  cursor: pointer;
+  display: inline;
+  transition: text-shadow 0.15s;
+  position: relative;
+}
+
+.poe-item-link:hover {
+  text-shadow: 0 0 6px currentColor;
+}
+
+.poe-link-gem {
+  color: #1ba29b;
+  font-weight: 600;
+}
+
+.poe-link-unique {
+  color: #af6025;
+  font-weight: 600;
+}
+
+.poe-inline-icon {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  margin-right: 3px;
+  margin-top: -2px;
+  filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));
+  image-rendering: auto;
+}
+
+/* ── Tooltip container ────────────────────────────────────────────── */
+.poe-tooltip-container {
+  position: fixed;
+  z-index: 2147483647;
+  pointer-events: none;
+  max-width: 420px;
+  min-width: 280px;
+  overflow: visible;
+  isolation: isolate;
+}
+
+.poe-tooltip-container.hidden {
+  display: none;
+}
+
+/* ── Tooltip base (the dark box) ──────────────────────────────────── */
+.poe-tooltip {
+  font-family: 'FontinSmallCaps', 'Fontin-SmallCaps', 'Crimson Pro', Georgia, serif;
+  font-variant: small-caps;
+  font-size: 14px;
+  line-height: 1.35;
+  color: #c8c8c8;
+  text-align: center;
+  position: relative;
+  padding: 0;
+  border-width: 2px;
+  border-style: solid;
+  /* PoE in-game background: very dark warm brown, nearly black */
+  background: #0c0b08;
+  box-shadow: 0 0 20px 4px rgba(0,0,0,0.85);
+}
+
+/* ── Frame colors ─────────────────────────────────────────────────── */
+.poe-frame-gem {
+  border-color: #1a9c97;
+}
+.poe-frame-unique {
+  border-color: #af6025;
+}
+.poe-frame-normal {
+  border-color: #5a5a4a;
+}
+
+/* ── Header / Name plate ──────────────────────────────────────────── */
+.poe-tt-header {
+  position: relative;
+  padding: 6px 20px 4px;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.poe-tt-header-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* Gem header gradient */
+.poe-frame-gem .poe-tt-header-bg {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(27,162,155,0.08) 25%,
+    rgba(27,162,155,0.12) 50%,
+    rgba(27,162,155,0.08) 75%,
+    transparent 100%
+  );
+}
+.poe-frame-unique .poe-tt-header-bg {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(175,96,37,0.08) 25%,
+    rgba(175,96,37,0.12) 50%,
+    rgba(175,96,37,0.08) 75%,
+    transparent 100%
+  );
+}
+.poe-frame-normal .poe-tt-header-bg {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(140,140,120,0.06) 50%,
+    transparent 100%
+  );
+}
+
+.poe-tt-name {
+  position: relative;
+  z-index: 1;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-variant: normal;
+  text-transform: uppercase;
+}
+.poe-frame-gem .poe-tt-name {
+  color: #1be4db;
+  text-shadow: 0 0 12px rgba(27,228,219,0.35);
+}
+.poe-frame-unique .poe-tt-name {
+  color: #af6025;
+  text-shadow: 0 0 10px rgba(175,96,37,0.35);
+}
+.poe-frame-normal .poe-tt-name {
+  color: #c8c8c8;
+}
+
+/* ── Tags line (Spell, AoE, Fire, etc.) ────────────────────────────── */
+.poe-tt-tags {
+  font-size: 12px;
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  color: #8080a0;
+  padding: 0 14px 4px;
+}
+
+/* ── Separator (PoE-style gradient line) ──────────────────────────── */
+.poe-tt-sep {
+  height: 2px;
+  margin: 2px 0;
+  position: relative;
+}
+.poe-frame-gem .poe-tt-sep {
+  background: linear-gradient(90deg, transparent, #1a9c97 30%, #1be4db 50%, #1a9c97 70%, transparent);
+  opacity: 0.6;
+}
+.poe-frame-unique .poe-tt-sep {
+  background: linear-gradient(90deg, transparent, #af6025 30%, #cf8035 50%, #af6025 70%, transparent);
+  opacity: 0.6;
+}
+.poe-frame-normal .poe-tt-sep {
+  background: linear-gradient(90deg, transparent, #5a5a4a 30%, #7a7a6a 50%, #5a5a4a 70%, transparent);
+  opacity: 0.5;
+}
+
+/* ── Properties (Level, Requirements) ─────────────────────────────── */
+.poe-tt-props {
+  padding: 4px 14px;
+}
+.poe-tt-prop {
+  font-size: 13px;
+  margin: 1px 0;
+  color: #7f7f7f;
+}
+.poe-tt-lbl {
+  color: #7f7f7f;
+}
+.poe-tt-white {
+  color: #ffffff;
+}
+
+/* ── Gem description (italic golden) ──────────────────────────────── */
+.poe-tt-gem-desc {
+  padding: 4px 14px;
+  color: #af6025;
+  font-style: italic;
+  font-size: 13px;
+  font-variant: normal;
+}
+
+/* ── Mods section ─────────────────────────────────────────────────── */
+.poe-tt-mods {
+  padding: 4px 14px;
+}
+.poe-tt-mod {
+  font-size: 13px;
+  margin: 2px 0;
+  font-variant: normal;
+  line-height: 1.35;
+}
+.poe-tt-mod-magic {
+  color: #8888ff;
+}
+.poe-tt-mod-quality {
+  color: #888;
+  font-style: italic;
+}
+.poe-tt-mod-implicit {
+  color: #8888ff;
+}
+
+/* ── Flavour text ─────────────────────────────────────────────────── */
+.poe-tt-flavour {
+  padding: 4px 14px;
+  color: #af6025;
+  font-style: italic;
+  font-size: 12px;
+  font-variant: normal;
+}
+
+/* ── Socket text (bottom of gems) ─────────────────────────────────── */
+.poe-tt-socket-text {
+  padding: 4px 14px 8px;
+  color: #5a5a6a;
+  font-size: 11px;
+  font-variant: small-caps;
+  line-height: 1.3;
+}
+
+.poe-tt-gem-icon {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 10px;
+}
+
+.poe-tt-gem-icon img {
+  width: 48px;
+  height: 48px;
+  filter: drop-shadow(0 0 4px rgba(0,0,0,0.6));
+}
+
+/* ── Fade-in animation ────────────────────────────────────────────── */
+.poe-tooltip-container:not(.hidden) .poe-tooltip {
+  animation: poeTooltipIn 0.1s ease-out;
+}
+
+@keyframes poeTooltipIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   POE SKILL TREE THEME — Ornamental elements from official GGG assets
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Ornamental gold separator (used between sections) ────────────── */
+.poe-separator {
+  width: 100%;
+  height: 16px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px 0;
+}
+
+.poe-separator::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(200,150,60,0.4) 20%,
+    rgba(232,184,74,0.65) 50%,
+    rgba(200,150,60,0.4) 80%,
+    transparent
+  );
+}
+
+.poe-separator::after {
+  content: '◆';
+  position: relative;
+  font-size: 7px;
+  color: var(--gold-dim);
+  background: var(--bg-card);
+  padding: 0 8px;
+  z-index: 1;
+}
+
+/* ── Enhanced next-zone card with arc decoration ──────────────────── */
+.next-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-style: dashed;
+  opacity: 0.7;
+  position: relative;
+  overflow: hidden;
+}
+
+.next-card::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 80px;
+  height: 80px;
+  background-image: url('assets/skilltree/line-0.png');
+  background-size: 160px auto;
+  background-position: 0 0;
+  opacity: 0.08;
+  pointer-events: none;
+  transform: rotate(180deg);
+}
+
+/* ── Level card glow enhancement ──────────────────────────────────── */
+.level-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  position: relative;
+}
+
+.level-display {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold-bright);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+  text-shadow: 0 0 8px rgba(232,184,74,0.3);
+}
+
+.level-display:hover {
+  background: rgba(200, 150, 60, 0.1);
+  text-shadow: 0 0 12px rgba(232,184,74,0.5);
+}
+
+/* ── Profile card header separator ────────────────────────────────── */
+.profile-card {
+  padding: 8px 12px;
+  position: relative;
+}
+
+.profile-card::after {
+  content: none;
+  /* Override the generic card ::after for profile card */
+}
+
+/* ── Ascendancy alert enhancement ─────────────────────────────────── */
+#ascendancy-alert {
+  position: relative;
+  overflow: hidden;
+}
+
+#ascendancy-alert::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 60px;
+  height: 60px;
+  background-image: url('assets/skilltree/group-background-0.png');
+  background-size: 600px auto;
+  background-position: -240px -120px;
+  opacity: 0.06;
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   HUD MODE — Compact floating in-game overlay
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* When HUD mode is active, hide the full app */
+body.hud-mode #app {
+  display: none !important;
+}
+body.hud-mode #hud-panel {
+  display: flex !important;
+}
+
+.hud-panel {
+  display: none;
+  flex-direction: column;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  width: 340px;
+  max-height: 60vh;
+  background: rgba(6, 4, 2, 0.75);
+  border: 1px solid rgba(200, 150, 60, 0.3);
+  border-radius: 6px;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 0 0 1px rgba(200,150,60,0.08),
+    0 4px 24px rgba(0,0,0,0.6);
+  z-index: 9999;
+  overflow: visible;
+  /* Smooth show/hide — starts in peek mode */
+  opacity: 0.15;
+  transform: translateX(-4px);
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  -webkit-app-region: drag;
+}
+
+/* Pinned state (Ctrl+D locked visible) */
+.hud-panel.hud-pinned {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* On hover, fully reveal even when not pinned */
+.hud-panel:hover,
+.hud-panel:focus-within {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(12, 9, 6, 0.9);
+  border-bottom: 1px solid rgba(200, 150, 60, 0.2);
+  -webkit-app-region: drag;
+  cursor: move;
+}
+
+.hud-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.hud-exit-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.hud-exit-btn:hover {
+  color: var(--gold-bright);
+  border-color: rgba(200,150,60,0.4);
+}
+
+.hud-zone {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  text-shadow: 0 0 8px rgba(200,150,60,0.3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 230px;
+}
+
+.hud-step {
+  font-family: var(--font-display);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+}
+
+.hud-actions {
+  list-style: none;
+  padding: 8px 12px;
+  margin: 0;
+  overflow-y: auto;
+  overflow-x: visible;
+  flex: 1;
+  -webkit-app-region: no-drag;
+}
+
+.hud-actions::-webkit-scrollbar { width: 3px; }
+.hud-actions::-webkit-scrollbar-thumb { background: rgba(200,150,60,0.25); border-radius: 3px; }
+.hud-actions::-webkit-scrollbar-track { background: transparent; }
+
+.hud-actions li {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-primary);
+  padding: 3px 0 3px 14px;
+  position: relative;
+  border-bottom: 1px solid rgba(200,150,60,0.06);
+}
+
+.hud-actions li:last-child { border-bottom: none; }
+
+.hud-actions li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--gold-dim);
+  font-size: 10px;
+  top: 5px;
+}
+
+/* Section header items (═══ label ═══) */
+.hud-actions li.hud-section-header {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  padding-left: 0;
+  padding-top: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(200,150,60,0.15);
+}
+
+.hud-actions li.hud-section-header::before { content: none; }
+
+.hud-hint {
+  padding: 4px 12px 6px;
+  font-family: var(--font-display);
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  text-align: center;
+  border-top: 1px solid rgba(200,150,60,0.08);
+  text-transform: uppercase;
+}
+
+/* Entry animation for actions */
+.hud-actions li {
+  animation: hudFadeIn 0.25s ease-out both;
+}
+@keyframes hudFadeIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.hud-actions li:nth-child(1)  { animation-delay: 0.02s; }
+.hud-actions li:nth-child(2)  { animation-delay: 0.04s; }
+.hud-actions li:nth-child(3)  { animation-delay: 0.06s; }
+.hud-actions li:nth-child(4)  { animation-delay: 0.08s; }
+.hud-actions li:nth-child(5)  { animation-delay: 0.10s; }
+.hud-actions li:nth-child(6)  { animation-delay: 0.12s; }
+.hud-actions li:nth-child(7)  { animation-delay: 0.14s; }
+.hud-actions li:nth-child(8)  { animation-delay: 0.16s; }
+.hud-actions li:nth-child(9)  { animation-delay: 0.18s; }
+.hud-actions li:nth-child(10) { animation-delay: 0.20s; }

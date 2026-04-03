@@ -1,7 +1,8 @@
-const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const chokidar = require('chokidar');
+const { autoUpdater } = require('electron-updater');
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
 const POE_LOG_PATHS = [
@@ -21,6 +22,7 @@ const STARTUP_READ_BYTES = 200 * 1024;
 // ─── PERSIST FILE (saves level + zone between sessions) ────────────────────────
 const SAVE_FILE = path.join(app.getPath('userData'), 'poe-overlay-state.json');
 const PROFILES_FILE = path.join(__dirname, 'poe-profiles.json');
+const ITEM_CACHE_FILE = path.join(app.getPath('userData'), 'poe-item-cache.json');
 
 function loadSavedState() {
   try {
@@ -55,8 +57,8 @@ function findLogFile() {
 // ─── CREATE OVERLAY WINDOW ─────────────────────────────────────────────────────
 function createOverlayWindow() {
   overlayWindow = new BrowserWindow({
-    width: 420,
-    height: 600,
+    width: 460,
+    height: 700,
     x: 20,
     y: 80,
     frame: false,
@@ -233,6 +235,31 @@ ipcMain.on('set-clickthrough', (_, enable) => {
   }
 });
 
+ipcMain.on('quit-app', () => {
+  app.quit();
+});
+
+// ─── FETCH MAXROLL GUIDE (from main process to avoid CORS) ──────────────────
+ipcMain.on('install-update', () => {
+  autoUpdater.quitAndInstall();
+});
+
+ipcMain.handle('fetch-maxroll-guide', async (_, url) => {
+  try {
+    // Validate URL
+    if (!url || !url.includes('maxroll.gg/poe/build-guides/')) {
+      return { error: 'Invalid Maxroll URL. Must be a maxroll.gg/poe/build-guides/ URL.' };
+    }
+    const resp = await require('electron').net.fetch(url);
+    if (!resp.ok) return { error: `HTTP ${resp.status}: ${resp.statusText}` };
+    const html = await resp.text();
+    return { html };
+  } catch (e) {
+    console.error('[PoE Overlay] Failed to fetch Maxroll guide:', e.message);
+    return { error: e.message };
+  }
+});
+
 // ─── PROFILES FILE I/O ─────────────────────────────────────────────────────────
 ipcMain.handle('load-profiles', () => {
   try {
@@ -255,13 +282,65 @@ ipcMain.handle('save-profiles', (_, profiles) => {
   }
 });
 
+// ─── ITEM CACHE FILE I/O ─────────────────────────────────────────────────────────────────
+ipcMain.handle('load-item-cache', () => {
+  try {
+    if (fs.existsSync(ITEM_CACHE_FILE)) {
+      return JSON.parse(fs.readFileSync(ITEM_CACHE_FILE, 'utf8'));
+    }
+  } catch (e) {
+    console.error('[PoE Overlay] Failed to load item cache:', e.message);
+  }
+  return {};
+});
+
+ipcMain.handle('save-item-cache', (_, cache) => {
+  try {
+    fs.writeFileSync(ITEM_CACHE_FILE, JSON.stringify(cache), 'utf8');
+    return true;
+  } catch (e) {
+    console.error('[PoE Overlay] Failed to save item cache:', e.message);
+    return false;
+  }
+});
+
+// ─── FETCH POE.NINJA DATA (from main process to avoid CORS) ─────────────────
+ipcMain.handle('fetch-poe-ninja', async (_, type) => {
+  try {
+    const url = `https://poe.ninja/api/data/itemoverview?league=Standard&type=${type}&language=en`;
+    const resp = await require('electron').net.fetch(url);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data;
+  } catch (e) {
+    console.error(`[PoE Overlay] Failed to fetch poe.ninja ${type}:`, e.message);
+    return null;
+  }
+});
+
 // ─── APP LIFECYCLE ─────────────────────────────────────────────────────────────
 app.whenReady().then(() => {
   createOverlayWindow();
+  // ─── AUTO-UPDATER ──────────────────────────────────────
+  // Only check for updates in packaged builds, not during npm start
+  if (app.isPackaged) {
+    autoUpdater.checkForUpdatesAndNotify();
 
+    autoUpdater.on('update-available', () => {
+      sendToOverlay('update-status', { status: 'downloading' });
+    });
+
+    autoUpdater.on('update-downloaded', () => {
+      sendToOverlay('update-status', { status: 'ready' });
+    });
+
+    autoUpdater.on('error', (err) => {
+      console.error('[AutoUpdater] Error:', err.message);
+    });
+  }
   globalShortcut.register(HOTKEY_TOGGLE, () => {
     if (!overlayWindow) return;
-    overlayWindow.isVisible() ? overlayWindow.hide() : overlayWindow.show();
+    sendToOverlay('toggle-hud', {});
   });
 
   globalShortcut.register(HOTKEY_NEXT, () => sendToOverlay('hotkey-next', {}));

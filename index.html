@@ -7,11 +7,27 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Tooltip container (positioned absolutely, hidden by default) -->
+  <div id="poe-tooltip-container" class="poe-tooltip-container hidden"></div>
+
+  <!-- ── HUD MODE (compact floating overlay) ── -->
+  <div id="hud-panel" class="hud-panel hud-hidden">
+    <div class="hud-header" id="hud-header">
+      <span class="hud-zone" id="hud-zone-name">Lioneye's Watch</span>
+      <div class="hud-header-right">
+        <span class="hud-step" id="hud-step">1/117</span>
+        <button id="btn-hud-exit" class="hud-exit-btn" title="Back to full overlay (Ctrl+D)">⊞</button>
+      </div>
+    </div>
+    <ul class="hud-actions" id="hud-actions"></ul>
+    <div class="hud-hint">hover to peek · Ctrl+D to close</div>
+  </div>
+
   <div id="app">
     <!-- Drag handle / header -->
     <div id="header" class="drag-region">
       <div class="header-left">
-        <span class="logo-gem">◆</span>
+        <span class="logo-gem">⬥</span>
         <span class="app-title">EXILE GUIDE</span>
       </div>
       <div class="header-right">
@@ -20,7 +36,9 @@
           <span class="indicator-label">Disconnected</span>
         </div>
         <button id="btn-clickthrough" class="icon-btn" title="Toggle click-through (makes overlay non-interactive)">⊙</button>
+        <button id="btn-hud-mode" class="icon-btn" title="Toggle HUD mode (Ctrl+D) — compact in-game view">◉</button>
         <button id="btn-minimize" class="icon-btn no-drag" title="Minimize">−</button>
+        <button id="btn-close" class="icon-btn no-drag icon-btn-close" title="Close application">✕</button>
       </div>
     </div>
 
@@ -48,6 +66,7 @@
             <span class="profile-separator">│</span>
             <button id="btn-export-guide" class="profile-btn" title="Export guide (actions only)">📤</button>
             <button id="btn-import-guide" class="profile-btn" title="Import guide from code">📥</button>
+            <button id="btn-import-maxroll" class="profile-btn" title="Import from Maxroll URL">🌐</button>
           </div>
         </div>
         <!-- Inline new profile input (hidden by default) -->
@@ -73,8 +92,7 @@
         </div>
 
         <div class="zone-title-row">
-          <span class="current-zone-name" id="current-zone-name" title="Click to change zone">Lioneye's Watch</span>
-          <input type="text" id="zone-name-input" class="zone-name-input hidden" placeholder="Zone name">
+          <span class="current-zone-name" id="current-zone-name">Lioneye's Watch</span>
           <select id="act-select-dropdown" class="act-select-dropdown">
             <option value="1">ACT 1</option>
             <option value="2">ACT 2</option>
@@ -116,11 +134,17 @@
         </div>
       </div>
 
+      <!-- Ornamental separator -->
+      <div class="poe-separator"></div>
+
       <!-- Next zone preview -->
       <div id="next-card" class="card next-card">
         <span class="card-label">NEXT ZONE</span>
         <span class="next-zone-name" id="next-zone-name">The Coast →</span>
       </div>
+
+      <!-- Ornamental separator -->
+      <div class="poe-separator"></div>
 
       <!-- Level display -->
       <div id="level-card" class="card level-card">
@@ -134,7 +158,7 @@
     <!-- Status bar -->
     <div id="status-bar">
       <span id="status-text">Waiting for game...</span>
-      <span class="hotkey-hint">Ctrl+D toggle · Ctrl+← → navigate</span>
+      <span class="hotkey-hint">Ctrl+D HUD mode · Ctrl+← → navigate</span>
       <button id="btn-zone-selector" class="zone-selector-btn" title="Manual zone selection">▼</button>
     </div>
   </div>
@@ -202,6 +226,28 @@
     </div>
   </div>
 
+  <!-- Maxroll Import Modal -->
+  <div id="maxroll-modal" class="modal hidden">
+    <div class="modal-backdrop maxroll-modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>IMPORT FROM MAXROLL</h2>
+        <button id="btn-maxroll-modal-close" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="guide-modal-desc">Paste a Maxroll leveling build guide URL (e.g. ranger-leveling-build-guide). A new profile will be created with the guide data.</p>
+        <input type="text" id="maxroll-url-input" class="new-profile-input" style="width:100%;font-family:monospace;font-size:11px" placeholder="https://maxroll.gg/poe/build-guides/ranger-leveling-build-guide">
+        <input type="text" id="maxroll-profile-name" class="new-profile-input" style="width:100%;margin-top:8px" placeholder="Profile name (e.g. Ranger LA)" maxlength="30">
+        <div id="maxroll-status" class="guide-modal-desc" style="color:var(--gold-dim);min-height:18px;margin-top:6px"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-maxroll-import" class="btn-primary">Fetch & Import</button>
+        <button id="btn-maxroll-cancel" class="btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="poe-item-data.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

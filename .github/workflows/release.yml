@@ -24,7 +24,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and publish release
+      - name: Build installer
+        run: npm run build
+
+      - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run release
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          gh release create "$TAG" --title "$TAG" --generate-notes dist/*.exe dist/*.yml dist/*.blockmap 2>/dev/null || \
+          gh release upload "$TAG" dist/*.exe dist/*.yml dist/*.blockmap --clobber

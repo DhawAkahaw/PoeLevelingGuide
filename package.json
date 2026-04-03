@@ -1,6 +1,6 @@
 {
     "name": "poe-leveling-overlay",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "Path of Exile Leveling Guide Overlay",
     "main": "main.js",
     "scripts": {

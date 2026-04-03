@@ -47,6 +47,7 @@
             ]
         },
         "asar": true,
+        "artifactName": "PoE-Leveling-Guide-Setup-${version}.${ext}",
         "appId": "com.dhawakahaw.poeoverlay",
         "nsis": {
             "oneClick": true,

@@ -21,7 +21,7 @@ const STARTUP_READ_BYTES = 200 * 1024;
 
 // ─── PERSIST FILE (saves level + zone between sessions) ────────────────────────
 const SAVE_FILE = path.join(app.getPath('userData'), 'poe-overlay-state.json');
-const PROFILES_FILE = path.join(__dirname, 'poe-profiles.json');
+const PROFILES_FILE = path.join(app.getPath('userData'), 'poe-profiles.json');
 const ITEM_CACHE_FILE = path.join(app.getPath('userData'), 'poe-item-cache.json');
 
 function loadSavedState() {

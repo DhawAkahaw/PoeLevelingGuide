@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('poeOverlay', {
   onToggleHud:   (cb) => ipcRenderer.on('toggle-hud',   (_, data) => cb(data)),
   onLogStatus:   (cb) => ipcRenderer.on('log-status',   (_, data) => cb(data)),
   onUpdateStatus: (cb) => ipcRenderer.on('update-status', (_, data) => cb(data)),
+  getUpdateStatus: ()  => ipcRenderer.invoke('get-update-status'),
   installUpdate:  ()  => ipcRenderer.send('install-update'),
 
   // ── Send events to main process ──

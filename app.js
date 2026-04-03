@@ -1330,21 +1330,10 @@ btnMaxrollImport.addEventListener('click', async () => {
 });
 
 if (window.poeOverlay) {
-  window.poeOverlay.onZoneEntered(handleZoneEntered);
-  window.poeOverlay.onLevelUp(handleLevelUp);
-  window.poeOverlay.onDeath(() => {
-    el.app.classList.add('death-flash');
-    setTimeout(() => el.app.classList.remove('death-flash'), 600);
-    setStatus('You died. Keep going!');
-  });
-  window.poeOverlay.onHotkeyNext(goNext);
-  window.poeOverlay.onHotkeyPrev(goPrev);
-  window.poeOverlay.onToggleHud(() => toggleHudPin());
-  window.poeOverlay.onUpdateStatus(({ status }) => {
+  function showUpdateStatus(status) {
     if (status === 'downloading') {
-      setStatus('\u2193 Downloading update...');
-    } else if (status === 'ready') {
-      // Show a sticky update banner in the status bar
+      setStatus('↓ Downloading update...');
+    } else if (status === 'ready' && !document.getElementById('update-banner')) {
       const bar = document.getElementById('status-bar');
       const banner = document.createElement('div');
       banner.id = 'update-banner';
@@ -1358,7 +1347,20 @@ if (window.poeOverlay) {
         window.poeOverlay.installUpdate();
       });
     }
+  }
+
+  window.poeOverlay.onZoneEntered(handleZoneEntered);
+  window.poeOverlay.onLevelUp(handleLevelUp);
+  window.poeOverlay.onDeath(() => {
+    el.app.classList.add('death-flash');
+    setTimeout(() => el.app.classList.remove('death-flash'), 600);
+    setStatus('You died. Keep going!');
   });
+  window.poeOverlay.onHotkeyNext(goNext);
+  window.poeOverlay.onHotkeyPrev(goPrev);
+  window.poeOverlay.onToggleHud(() => toggleHudPin());
+  window.poeOverlay.onUpdateStatus(({ status }) => showUpdateStatus(status));
+  window.poeOverlay.getUpdateStatus().then(status => { if (status) showUpdateStatus(status); });
   window.poeOverlay.onLogStatus((data) => {
     setConnected(data.connected);
     setStatus(data.connected ? 'Watching log file' : 'Client.txt not found — check main.js path');

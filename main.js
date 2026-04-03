@@ -324,13 +324,19 @@ app.whenReady().then(() => {
   // ─── AUTO-UPDATER ──────────────────────────────────────
   // Only check for updates in packaged builds, not during npm start
   if (app.isPackaged) {
+    let cachedUpdateStatus = null;
+
+    ipcMain.handle('get-update-status', () => cachedUpdateStatus);
+
     autoUpdater.checkForUpdatesAndNotify();
 
     autoUpdater.on('update-available', () => {
+      cachedUpdateStatus = 'downloading';
       sendToOverlay('update-status', { status: 'downloading' });
     });
 
     autoUpdater.on('update-downloaded', () => {
+      cachedUpdateStatus = 'ready';
       sendToOverlay('update-status', { status: 'ready' });
     });
 

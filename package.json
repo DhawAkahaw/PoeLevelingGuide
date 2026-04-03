@@ -22,14 +22,11 @@
     "build": {
         "files": [
             "**/*",
-            "!node_modules/**",
-            "node_modules/chokidar/**",
-            "node_modules/electron-updater/**",
-            "node_modules/electron-log/**",
             "!dist/**",
             "!.git/**",
             "!*.md",
-            "!Reference.xml"
+            "!Reference.xml",
+            "!scripts/**"
         ],
         "productName": "PoE Leveling Guide",
         "publish": {

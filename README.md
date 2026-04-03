@@ -10,7 +10,7 @@ A lightweight always-on-top overlay for Path of Exile that auto-detects your cur
 
 ### [⬇ Download Latest Release](https://github.com/DhawAkahaw/PoeLevelingGuide/releases/latest)
 
-1. Go to the link above 
+1. Go to the link above
 2. Download `PoE.Leveling.Guide.Setup.x.x.x.exe`
 3. Run the installer — it installs silently and launches automatically
 4. The overlay appears. Done.

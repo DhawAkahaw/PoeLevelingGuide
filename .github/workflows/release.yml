@@ -1,9 +1,12 @@
-name: Build & Release
+﻿name: Build & Release
 
 on:
   push:
     tags:
-      - 'v*'        # triggers on any tag like v1.0.1, v1.2.0, etc.
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   build-windows:
@@ -21,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build & publish release
+      - name: Build and publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run release

@@ -1330,9 +1330,19 @@ btnMaxrollImport.addEventListener('click', async () => {
 });
 
 if (window.poeOverlay) {
-  function showUpdateStatus(status) {
-    if (status === 'downloading') {
+  function showUpdateStatus(data) {
+    if (typeof data === 'string') data = { status: data };
+    const { status } = data;
+    if (status === 'checking') {
+      setStatus('🔍 Checking for updates...');
+    } else if (status === 'downloading') {
       setStatus('↓ Downloading update...');
+    } else if (status === 'progress') {
+      setStatus(`↓ Downloading update... ${data.percent}%`);
+    } else if (status === 'up-to-date') {
+      setStatus('✓ App is up to date');
+    } else if (status === 'error') {
+      setStatus(`⚠ Update error: ${data.message || 'unknown'}`);
     } else if (status === 'ready' && !document.getElementById('update-banner')) {
       const bar = document.getElementById('status-bar');
       const banner = document.createElement('div');
@@ -1359,7 +1369,7 @@ if (window.poeOverlay) {
   window.poeOverlay.onHotkeyNext(goNext);
   window.poeOverlay.onHotkeyPrev(goPrev);
   window.poeOverlay.onToggleHud(() => toggleHudPin());
-  window.poeOverlay.onUpdateStatus(({ status }) => showUpdateStatus(status));
+  window.poeOverlay.onUpdateStatus((data) => showUpdateStatus(data));
   window.poeOverlay.getUpdateStatus().then(status => { if (status) showUpdateStatus(status); });
   window.poeOverlay.onLogStatus((data) => {
     setConnected(data.connected);

@@ -328,11 +328,24 @@ app.whenReady().then(() => {
 
     ipcMain.handle('get-update-status', () => cachedUpdateStatus);
 
-    autoUpdater.checkForUpdatesAndNotify();
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    autoUpdater.on('checking-for-update', () => {
+      sendToOverlay('update-status', { status: 'checking' });
+    });
 
     autoUpdater.on('update-available', () => {
       cachedUpdateStatus = 'downloading';
       sendToOverlay('update-status', { status: 'downloading' });
+    });
+
+    autoUpdater.on('update-not-available', () => {
+      sendToOverlay('update-status', { status: 'up-to-date' });
+    });
+
+    autoUpdater.on('download-progress', (progress) => {
+      sendToOverlay('update-status', { status: 'progress', percent: Math.round(progress.percent) });
     });
 
     autoUpdater.on('update-downloaded', () => {
@@ -342,7 +355,10 @@ app.whenReady().then(() => {
 
     autoUpdater.on('error', (err) => {
       console.error('[AutoUpdater] Error:', err.message);
+      sendToOverlay('update-status', { status: 'error', message: err.message });
     });
+
+    autoUpdater.checkForUpdates();
   }
   globalShortcut.register(HOTKEY_TOGGLE, () => {
     if (!overlayWindow) return;
